@@ -1,0 +1,25 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: Arial, sans-serif; }
+.wrapper {
+  display: flex;
+  flex-direction: column; /* Forza la disposizione verticale */
+  height: 100vh;     
+}
+.main-content {
+    display: flex;
+    flex-direction: column; /* Forza la disposizione verticale */
+    height: 100vh;     
+}
+
+/*
+Button hover: background color shift (#015c5d → #017d7e)
+table: Full width, border-collapse
+thead: Dark semi-transparent background
+tbody tr: Alternating row colors, highlight on hover
+Extras:
+
+.prescription-btn: Add scale/brightness hover effect
+.noPatientRecord: Italic, gray text when no records
+Mobile-friendly layout using flexible widths
+Add media queries to adjust font sizes and layout for small screens
+*/

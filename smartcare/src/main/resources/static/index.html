@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>
+            SmartCare
+        </title>
+        <link rel="icon" href="./assets/images/logo/logo.png" />
+        <link rel="stylesheet" href="./assets/css/index.css">
+        <link rel="stylesheet" href="./assets/css/style.css">     
+        <script src="./js/util.js" defer></script>
+        <script src="./js/render.js" defer></script>
+        <script src="./js/components/header.js" defer></script>
+        <script src="./js/components/footer.js" defer></script>          
+    </head>
+<body>
+    <main class="main-content">
+        <div id="header">        
+        </div>
+        <h2>Select Your Role:</h2>
+        <button id="btn_admin" class="btn_access" onclick="performAccess('admin')">
+            Admin
+        </button>
+        <button id="btn_doctor" class="btn_access" onclick="performAccess('doctor')">
+            Doctor
+        </button>
+        <button id="btn_patient" class="btn_access" onclick="performAccess('patient')">
+            Patient
+        </button>
+        <div class="container">
+            <div class="wrapper">             
+                <!--<div id="modal" class="modal" display:none>
+                    <div id="modal-body">
+
+                    </div>
+                    <button id="closeModal">Close</button>
+                </div>-->
+            </div>
+        </div>
+        <div id="footer"></div>
+    </main>
+    <script type="module" src="../js/services/index.js">
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,25 @@
+/*
+Style the Doctor Card Actions:
+Add a card-actions class to style the section where action buttons like "Book Now" appear.
+Use a dark background with centered text.
+Add a hover effect to slightly darken the background on mouseover for interactivity feedback.
+Ripple Overlay for Visual Feedback:
+Create a circular animation that expands outwards to simulate a click ripple when booking is confirmed.
+Use fixed positioning so the effect appears anywhere on screen.
+Make the animation smooth using CSS transitions and transform: scale(...) effects.
+Bottom Pop-Up Modal for Booking:
+The .modalApp class defines a container that initially slides in from the bottom of the screen.
+Use fixed positioning and horizontal centering.
+Apply a background color of white, subtle padding, and rounded top corners.
+Add a smooth slide-in animation triggered by toggling the .active class.
+Form Fields Inside Modal:
+Inputs and dropdowns in the modal should:
+Be centered on the page
+Have uniform width (90% of container)
+Include padding for usability
+Be spaced vertically for visual clarity
+Booking Confirmation Button:
+Use a dark-colored background to match the theme.
+Add padding and rounded corners for a clean, clickable look.
+On hover, increase brightness slightly for user feedback using filter: brightness(1.2).
+*/

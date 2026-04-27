@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}">
+<link rel="stylesheet" th:href="@{/assets/css/style.css}">
+<script th:src="@{/js/render.js}" defer></script>
+<script th:src="@{/js/components/header.js}" defer></script>
+<script th:src="@{/js/components/footer.js}" defer></script>
+<script th:src="@{/js/components/patientRows.js}" defer></script>
+
+<body>
+    <div class="container">
+        <div class="wrapper">
+            <div id="header">
+                <button class="btn_add" onclick="addDoctor">
+                    Add doctor
+                </button>
+            </div>
+            <main class="class-content">
+                <input type="text" id="searchBar" />
+                <button class="btn_search">
+                    Today's Appointments
+                </button>
+                <input type="date" id="datePatientInput" />
+                <table id="patientTable">
+                    <tr>
+                        <td>Patient ID</td>
+                        <td>Name</td>
+                        <td>Phone</td>
+                        <td>Email</td>
+                        <td>Prescription</td>
+                    </tr>
+                </table>
+                <div id="content"></div>
+            </main>
+        </div>
+    </div>
+    <script type="module" src="../js/services/patientServices.js" defer></script>
+    <script type="module" src="../js/components/doctorDashboard.js" defer></script>
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}">
+        <link rel="stylesheet" th:href="@{/assets/css/style.css}">
+        <script th:src="@{/js/render.js}" defer></script>
+        <script th:src="@{/js/util.js}" defer></script>
+        <script th:src="@{/js/components/header.js}" defer></script>
+        <script th:src="@{/js/components/footer.js}" defer></script>
+        <title>
+            Admin Dashboard
+        </title>     
+    </head>
+    <body>
+        <div class="container">
+            <div class="wrapper">
+                <div id="header">
+                    <button class="btn_add" onclick="addDoctor">
+                        Add doctor
+                    </button>                    
+                </div>
+                <main class="class-content">
+                    <input type="text" id="searchBar" placeholder="search by doctor name" />
+                    <select>
+                        <option value="sort_by_time">Sorting by time</option>
+                        <option value="filter_by_spec">Filtering by specialty</option>
+                    </select>
+                    <div id="content"></div>
+                </main>
+            </div>
+        </div>
+        <script type="module" src="../js/services/adminDashboard.js" defer></script>
+        <script type="module" src="../js/components/doctorCard.js" defer></script>
+    </body>
+    <div id="modal" class="modal">
+        <span id="closeModal" class="close">&times;</span>
+        <div id="modal-body"></div>
+      </div>
+      
+</html>

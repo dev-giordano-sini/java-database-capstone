@@ -1,0 +1,16 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: Arial, sans-serif; }
+.wrapper {
+  display: flex;
+  flex-direction: column; /* Forza la disposizione verticale */
+  height: 100vh;     
+}
+.main-content {
+    display: flex;
+    flex-direction: column; /* Forza la disposizione verticale */
+    height: 100vh;     
+}
+
+/*add button style (and hover) with round corners
+add modal style
+*/
