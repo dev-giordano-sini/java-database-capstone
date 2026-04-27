@@ -1,4 +1,4 @@
-export function createDoctorCard(doctor);
+//export function createDoctorCard(doctor);
 
 function createDoctorCard(card) {
 
