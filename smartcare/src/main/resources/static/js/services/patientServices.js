@@ -2,8 +2,9 @@ import { API_BASE_URL } from "../config/config.js";
 const PATIENT_API = API_BASE_URL + '/patient'
 
 
-async function patientSignup(data) {
-    const request = await fetch(PATIENT_API, {
+export async function patientSignup(data) {
+    const request = await fetch(PATIENT_API 
+        + '/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -13,8 +14,9 @@ async function patientSignup(data) {
     .catch(error => { alert(error.message) });
 }
 
-async function patientLogin(data) {
-    const request = await fetch(PATIENT_API, {
+export async function patientLogin(data) {
+    const request = await fetch(PATIENT_API +
+        'login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -25,8 +27,9 @@ async function patientLogin(data) {
 }
 
 
-async function getPatientData(token) {
+export async function getPatientData(token) {
     const request = await fetch(PATIENT_API
+        + 'patient'        
         + '?token=' + token
         , {
         method: 'GET',
@@ -37,15 +40,16 @@ async function getPatientData(token) {
     .catch(error => { alert(error.message) });
 }
 
-async function getPatientAppointments(id, token ,user) {
+export async function getPatientAppointments(token, id, user) {
     let role = '';
     if(user == 'patient' || user == 'doctor') {
         role = user;
     }
     const request = await fetch(PATIENT_API
-        + '?id=' + id
-        + '&token=' + token
-        + '&user=' + role
+        + 'appointments'
+        
+        + '&id=' + id        
+        + '&role=' + role
         , {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }        
@@ -55,5 +59,23 @@ async function getPatientAppointments(id, token ,user) {
     .catch(error => { 
         alert(error.message) 
         return null
+    });
+}
+
+export async function filterAppointments(token, condition, name) {   
+    const request = await fetch(PATIENT_API
+        + 'filter_appointment'
+        + '?token=' + token
+        + '&name=' + name        
+        + '&condition=' + condition
+        , {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }        
+    }).then(response => {
+        return JSON.parse(response);
+    })
+    .catch(error => { 
+        alert(error.message) 
+        return []
     });
 }

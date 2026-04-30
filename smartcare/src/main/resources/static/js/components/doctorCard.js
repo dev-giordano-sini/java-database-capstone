@@ -1,6 +1,6 @@
 //export function createDoctorCard(doctor);
 
-function createDoctorCard(card) {
+export function createDoctorCard(doctor) {
 
     const card = document.createElement("div");
     card.classList.add("doctor-card");

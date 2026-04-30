@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/config.js";
 const DOCTOR_API = API_BASE_URL + '/doctor';
 
-async function getDoctors() {
+export async function getDoctors() {
     const request = await fetch(DOCTOR_API, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }        
@@ -11,7 +11,7 @@ async function getDoctors() {
     .catch(error => { [] });
 }
 
-async function deleteDoctor(id, token) {
+export async function deleteDoctor(id, token) {
     const request = await fetch(DOCTOR_API 
         + '?id=' + id 
         + '&token='+ token, {
@@ -23,7 +23,7 @@ async function deleteDoctor(id, token) {
     .catch(error => { [] });
 }
 
-async function saveDoctor(doctor, token) {
+export async function saveDoctor(doctor, token) {
     const request = await fetch(DOCTOR_API 
         + '?&token='+ token, {
         method: 'POST',
@@ -35,7 +35,7 @@ async function saveDoctor(doctor, token) {
     .catch(error => { alert(error.message) });
 }
 
-async function filterDoctors(name, time, specialty, token) {
+export async function filterDoctors(name, time, specialty, token) {
     const request = await fetch(DOCTOR_API 
         + '?name=' + name 
         + '&time=' + time

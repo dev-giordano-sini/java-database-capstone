@@ -1,3 +1,3 @@
-function openModal(loginType) {
+export function openModal(loginType) {
     
 }
