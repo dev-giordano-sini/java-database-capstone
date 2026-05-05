@@ -13,12 +13,4 @@ public class AdminService {
     @Autowired
     private AdminRepository adminRepository;
 
-    public Admin findByUsername(String username) {
-        Admin adminToSearch = new Admin();
-        adminToSearch.setUsername(username);
-        Example<Admin> example = Example.of(adminToSearch);
-        Optional<Admin> optionalAdmin = adminRepository.findOne(example);
-
-        return optionalAdmin.orElse(new Admin());
-    }
 }

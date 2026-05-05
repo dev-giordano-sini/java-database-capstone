@@ -1,61 +1,143 @@
 package com.smartcare.backend.service;
 
-import com.smartcare.backend.model.Admin;
 import com.smartcare.backend.model.Appointment;
+import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
+import com.smartcare.backend.repository.DoctorRepository;
+import com.smartcare.backend.repository.PatientRepository;
 import jakarta.transaction.Transactional;
+import org.apache.commons.logging.LogFactory;
+import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+@Service
 public class AppointmentService {
-    @Autowired
-    private AppointmentRepository appointmentRepository;
+    private final Log log = (Log) LogFactory.getLog(this.getClass());
 
+    private final AppointmentRepository appointmentRepository;
+    private final PatientRepository patientRepository;
+    private final DoctorRepository doctorRepository;
+    private final TokenService  tokenService;
+    private final MyService myService;
 
-    public List<Appointment> findByDoctorIdAndAppointmentTimeBetween(Long doctorId, LocalDateTime start, LocalDateTime end) {
-        /**
-         * Query: Use @Query with LEFT JOIN FETCH to include doctor and availability info
-         */
-        return appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctorId, start, end).orElse(new ArrayList<>());
-    }
-
-    public List<Appointment> findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(Long doctorId, String patientName, LocalDateTime start, LocalDateTime end) {
-        /**
-         * Query: Use @Query with LEFT JOIN FETCH to include patient and doctor details
-         */
-        return appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctorId, patientName, start, end).orElse(new ArrayList<>());
+    public AppointmentService(AppointmentRepository appointmentRepository, PatientRepository patientRepository, DoctorRepository doctorRepository, TokenService tokenService, MyService myService) {
+        this.appointmentRepository = appointmentRepository;
+        this.patientRepository = patientRepository;
+        this.doctorRepository = doctorRepository;
+        this.tokenService = tokenService;
+        this.myService = myService;
     }
 
     @Transactional
-    @Modifying
-    public void deleteAllByDoctorId(Long doctorId) {
+    public int bookAppointment(Appointment appointment) {
+        try {
+            appointmentRepository.save(appointment);
+            return 1;
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            return 0;
+        }
 
     }
 
-    public List<Appointment> findByPatientId(Long patientId) {
-        return null;
+    @Transactional
+    public ResponseEntity<Map<String, String>> updateAppointment(Appointment appointment) {
+        Map<String,String> map = new HashMap<>();
+        map.put("status","success");
+        map.put("message", "");
+
+        Optional<Appointment> optional = appointmentRepository.findById(appointment.getId());
+
+        if(optional.isPresent()) {
+            if(optional.get() == appointment) {
+                appointmentRepository.save(appointment);
+                boolean isValid = validateAppointment(appointment);
+
+                if(isValid) {
+                    map.put("message","appointment updated");
+                }
+                else {
+                    map.put("status","ko");
+                    map.put("message","appointment not saved");
+                }
+            }
+        }
+        else {
+            map.put("status","no appointment with id:"+appointment.getId());
+        }
+
+        return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
-    public List<Appointment> findByPatient_IdAndStatusOrderByAppointmentTimeAsc(Long patientId, int status) {
-        return null;
+    @Transactional
+    public ResponseEntity<Map<String, String>> cancelAppointment(long id, String token) {
+        // TODO: validate token..
+        Map<String,String> map = new HashMap<>();
+        map.put("status","success");
+
+        Optional<Appointment> optional = appointmentRepository.findById(id);
+
+        if(optional.isPresent()) {
+            map.put("message","appointment cancelled");
+            appointmentRepository.deleteById(id);
+        }
+        else {
+            map.put("status","ko");
+            map.put("message","no appointment found");
+        }
+
+        return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
-    public List<Appointment> filterByDoctorNameAndPatientId(String doctorName, Long patientId) {
-        /***
-         * LOWER, CONCAT, and % for partial, case-insensitive text matches.
-         */
-        return appointmentRepository.filterByDoctorNameAndPatientId(doctorName, patientId).orElse(new ArrayList<>());
+    @Transactional
+    public Map<String, Object> getAppointment(String patientName, LocalDate date, String token) {
+        // TODO: validate token..
+        Map<String,Object> doctorToAppointment = new HashMap<>();
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atStartOfDay().plusDays(1);
+
+        List<Doctor> doctors = doctorRepository.findAll();
+        doctors.forEach(doctor -> {
+            Optional<List<Appointment>> optionalAppointments;
+            if(patientName != null && !patientName.isEmpty()) {
+                optionalAppointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
+            }
+            else {
+                optionalAppointments = appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctor.getId(), patientName, start, end);
+            }
+
+            if(optionalAppointments.isPresent() && !optionalAppointments.get().isEmpty()) {
+                doctorToAppointment.put(doctor.getName(),optionalAppointments.get());
+            }
+        });
+
+        return doctorToAppointment;
     }
 
-    public List<Appointment> filterByDoctorNameAndPatientIdAndStatus(String doctorName, Long patientId, int status) {
-        /***
-         * LOWER, CONCAT, and % for partial, case-insensitive text matches.
-         */
-        return appointmentRepository.filterByDoctorNameAndPatientIdAndStatus(doctorName, patientId, status).orElse(new ArrayList<>());
+    public boolean validateAppointment(Appointment oldAppointment) {
+        Appointment newAppointment = appointmentRepository.findById(oldAppointment.getId()).orElse(null);
+        if(newAppointment  == null) {
+            return false;
+        }
+        boolean isValid = false;
+
+        if(!oldAppointment.getDoctor().equals(newAppointment.getDoctor()))
+            isValid = true;
+        if(!oldAppointment.getAppointmentTime().equals(newAppointment.getAppointmentTime())
+                || !oldAppointment.getEndTime().equals(newAppointment.getEndTime()))
+            isValid = true;
+        if(!oldAppointment.getNotes().equals(newAppointment.getNotes()))
+            isValid = true;
+
+        return true;
     }
 
 }

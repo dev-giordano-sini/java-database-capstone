@@ -1,7 +1,7 @@
 package com.smartcare.backend.controller;
 
 
-import com.smartcare.backend.service.Validator;
+import com.smartcare.backend.service.TokenService;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class DashboardController {
 
     @Autowired
-    private Validator validator;
+    private TokenService validator;
 
     @GetMapping("/adminDashboard/{token}")
     public String adminDashboard(@NotNull @PathVariable("token") String token) {
@@ -39,4 +39,6 @@ public class DashboardController {
 
         return template;
     }
+
+
 }

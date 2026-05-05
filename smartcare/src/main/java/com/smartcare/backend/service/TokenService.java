@@ -1,9 +1,10 @@
 package com.smartcare.backend.service;
 
+import com.smartcare.backend.DTO.LoginDTO;
 import org.springframework.stereotype.Service;
 
 @Service
-public class Validator {
+public class TokenService {
 
     //TODO: this must will not return a reponse
     //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -11,5 +12,13 @@ public class Validator {
 
     public boolean validateToken(String token, String role) {
         return false;
+    }
+
+    public boolean isValidToken(String token) {
+        return false;
+    }
+
+    public String getToken(LoginDTO  loginDTO) {
+        return null;
     }
 }
