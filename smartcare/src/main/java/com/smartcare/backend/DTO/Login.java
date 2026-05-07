@@ -1,6 +1,6 @@
 package com.smartcare.backend.DTO;
 
-public class LoginDTO {
+public class Login {
     private String identifier;
     private String password;
 

@@ -1,6 +1,6 @@
 package com.smartcare.backend.service;
 
-import com.smartcare.backend.DTO.LoginDTO;
+import com.smartcare.backend.DTO.Login;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +18,7 @@ public class TokenService {
         return false;
     }
 
-    public String getToken(LoginDTO  loginDTO) {
+    public String getToken(Login loginDTO) {
         return null;
     }
 }

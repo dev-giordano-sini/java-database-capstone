@@ -14,22 +14,30 @@ public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @NotNull
     @Size(min = 3, max = 100)
     private String name;
+
     @NotNull
     @Size(min = 3, max = 50)
     private String specialty;
+
     @Email
     @NotNull
     private String email;
+
     @Size(min = 6)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
+
     @Pattern(regexp = "\\d{10}")
     private String phone;
-    @ElementCollection
+
+    @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
+    @Column(name = "time_slot")
     private List<String> availableTimes;
+
     @NotNull
     @Size(min = 0, max = 5)
     private int rating;
