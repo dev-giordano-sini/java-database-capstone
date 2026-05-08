@@ -1,5 +1,6 @@
 package com.smartcare.backend.service;
 
+import com.smartcare.backend.DTO.AppointmentDTO;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -8,7 +9,6 @@ import com.smartcare.backend.repository.PatientRepository;
 import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
 import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
@@ -115,7 +116,8 @@ public class AppointmentService {
             }
 
             if(optionalAppointments.isPresent() && !optionalAppointments.get().isEmpty()) {
-                doctorToAppointment.put(doctor.getName(),optionalAppointments.get());
+                List<AppointmentDTO> appointmentDTOS = optionalAppointments.get().stream().map(AppointmentDTO::to).toList();
+                doctorToAppointment.put(doctor.getName(),appointmentDTOS);
             }
         });
 
