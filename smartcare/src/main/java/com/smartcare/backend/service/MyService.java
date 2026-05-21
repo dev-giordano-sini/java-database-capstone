@@ -42,7 +42,7 @@ public class MyService {
     }
 
 
-    public ResponseEntity<Map<String, String>> validateToken (String token, String user) {
+    public ResponseEntity<Map<String, String>> validateToken(String token, String user) {
         Map<String, String> response = new HashMap<>();
 
         Map<String, String> tokenData =  tokenService.decodeToken(token);
