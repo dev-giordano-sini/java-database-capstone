@@ -85,14 +85,6 @@ public class TokenService {
         return roleFromToken.equals(role) && expiration >= now;
     }
 
-    public boolean isValidToken(String token) {
-        return false;
-    }
-
-    public String getToken(Login login) {
-        return null;
-    }
-
     public Map<String,String> decodeToken(String token) {return null; }
 
     private String createToken(Map<String, Object> claims, String identifier) {

@@ -183,7 +183,7 @@ public class DoctorService {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        String token = tokenService.getToken(loginDTO);
+        String token = tokenService.generateToken(loginDTO.getIdentifier());
 
         if (token == null) {
             response.put("message", "Create token error");
