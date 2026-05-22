@@ -10,11 +10,10 @@ import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +57,7 @@ public class DoctorController {
 
 
     @PostMapping("/{token}")
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> addDoctor(@PathVariable("token") String token, @RequestBody Doctor doctor) {
         ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "admin");
 
@@ -103,6 +103,7 @@ public class DoctorController {
     }
 
     @PutMapping("/{token}")
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>>updateDoctorDetail(@PathVariable("token")String token, @RequestBody Doctor doctor) {
         ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "admin");
 

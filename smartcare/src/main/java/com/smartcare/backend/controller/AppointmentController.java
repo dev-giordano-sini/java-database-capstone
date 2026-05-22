@@ -8,6 +8,7 @@ import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class AppointmentController {
     }
 
     @PostMapping("/{token}")
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         Map<String, String> response = new HashMap<>();
@@ -76,6 +78,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{token}")
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> updateAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {

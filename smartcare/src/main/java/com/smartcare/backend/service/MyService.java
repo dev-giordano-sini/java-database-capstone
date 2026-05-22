@@ -49,9 +49,8 @@ public class MyService {
 
         String userFromToken = tokenData.get("user");
         LocalDateTime expirationDateTimeFromToken = LocalDateTime.parse(tokenData.get("expirationDate"));
-        String roleFromRole = tokenData.get("role");
 
-        if(user.equals(userFromToken)) {
+        if(user.equals(userFromToken) && expirationDateTimeFromToken.isAfter(LocalDateTime.now())) {
             response.put("status", "success");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
@@ -66,9 +65,10 @@ public class MyService {
         Map<String, String> response = new HashMap<>();
         Admin adminFromDb = adminRepository.findByUsername(receivedAdmin.getUsername());
 
-        if(adminFromDb == null && adminFromDb.getPassword().equals(receivedAdmin.getPassword())) {
+        if(adminFromDb != null && (adminFromDb.getUsername().equals(receivedAdmin.getUsername()) &&
+                adminFromDb.getPassword().equals(receivedAdmin.getPassword()))) {
             response.put("status", "success");
-            response.put("token", ""/*tokenService.getToken()*/);
+            response.put("token", tokenService.generateToken(receivedAdmin.getUsername()));
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         else {
@@ -120,15 +120,17 @@ public class MyService {
     public ResponseEntity<Map<String, String>> validatePatientLogin(Login login) {
         Patient patient = patientRepository.findByEmail(login.getIdentifier());
         Map<String, String> response = new HashMap<>();
-        if(patient != null && patient.getPassword().equals(login.getPassword())) {
+        if(patient != null && patient.getEmail().equals(login.getIdentifier()) && patient.getPassword().equals(login.getPassword())) {
             response.put("status", "success");
             response.put("token", tokenService.generateToken(login.getIdentifier()));
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
+        else {
+            response.put("status", "error");
+            response.put("message", "Invalid username or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
 
-        response.put("status", "error");
-        response.put("message", "Invalid username or password");
-        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
     public ResponseEntity<Map<String, Object>> filterPatient(String condition, String doctorName, String token) {
