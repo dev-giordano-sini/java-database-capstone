@@ -1,8 +1,10 @@
 package com.smartcare.backend.controller;
 
+import com.smartcare.backend.DTO.AppointmentDTO;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.service.AppointmentService;
 import com.smartcare.backend.service.MyService;
+import jakarta.validation.Valid;
 import org.apache.commons.logging.LogFactory;
 import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +47,11 @@ public class AppointmentController {
 
     @PostMapping("/{token}")
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
+    public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @Valid @RequestBody AppointmentDTO appointmentDTO) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         Map<String, String> response = new HashMap<>();
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
+            Appointment appointment = AppointmentDTO.getAppointment(appointmentDTO);
             int isValid = myService.validateAppointment(appointment);
             HttpStatus httpStatus = null;
             switch (isValid) {

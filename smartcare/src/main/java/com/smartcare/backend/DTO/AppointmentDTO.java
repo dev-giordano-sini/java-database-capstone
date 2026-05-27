@@ -1,6 +1,8 @@
 package com.smartcare.backend.DTO;
 
 import com.smartcare.backend.model.Appointment;
+import com.smartcare.backend.model.Doctor;
+import com.smartcare.backend.model.Patient;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -155,5 +157,27 @@ public class AppointmentDTO {
                 appointment.getAppointmentTime(),
                 appointment.getStatus()
         );
+    }
+
+    public static Appointment getAppointment(AppointmentDTO appointmentDTO) {
+        Appointment appointment = new Appointment();
+
+        Doctor doctor = new Doctor();
+        doctor.setId(appointmentDTO.getDoctorId());
+        doctor.setName(appointmentDTO.getDoctorName());
+        appointment.setDoctor(doctor);
+
+        Patient patient = new Patient();
+        patient.setId(appointmentDTO.getPatientId());
+        patient.setName(appointmentDTO.getPatientName());
+        patient.setEmail(appointmentDTO.getPatientEmail());
+        patient.setPhone(appointmentDTO.getPatientPhone());
+        patient.setAddress(appointmentDTO.getPatientAddress());
+        appointment.setPatient(patient);
+
+        appointment.setAppointmentTime(appointmentDTO.getAppointmentTime());
+        appointment.setStatus(appointmentDTO.getStatus());
+
+        return appointment;
     }
 }
