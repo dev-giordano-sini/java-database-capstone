@@ -99,7 +99,8 @@ public class MyService {
 
         List<String> doctorSlots = doctorService.getDoctorAvailability(id, appointment.getAppointmentTime().toLocalDate());
 
-        if(doctorSlots != null && !doctorSlots.isEmpty()) {
+        String requestedTime = appointment.getAppointmentTime().toLocalTime().toString();
+        if(doctorSlots.contains(requestedTime)) {
             return 1;
         }
         else {

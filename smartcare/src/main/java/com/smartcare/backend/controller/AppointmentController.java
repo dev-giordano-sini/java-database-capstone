@@ -35,7 +35,7 @@ public class AppointmentController {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "doctor");
 
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            Map<String, Object> appointments = appointmentService.getAppointment(patientName, date, token);
+            Map<String, Object> appointments = appointmentService.getAppointment(patientName, date);
             return appointments.values().stream().toList();
 
         }
@@ -61,14 +61,15 @@ public class AppointmentController {
                     httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
                 case 0 -> {
-                    response.put("status", "success");
-                    response.put("message", "appointment validated");
-                    httpStatus = HttpStatus.CREATED;
+                    response.put("status", "error");
+                    response.put("message", "appointment time unavailable");
+                    httpStatus = HttpStatus.CONFLICT;
                 }
                 case 1 -> {
-                    response.put("status", "error");
-                    response.put("message", "Invalid date");
-                    httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+                    int saved = appointmentService.bookAppointment(appointment);
+                    response.put("status", saved == 1 ? "success" : "error");
+                    response.put("message", saved == 1 ? "appointment booked" : "appointment not saved");
+                    httpStatus = saved == 1 ? HttpStatus.CREATED : HttpStatus.INTERNAL_SERVER_ERROR;
                 }
             }
 
@@ -85,11 +86,7 @@ public class AppointmentController {
     public ResponseEntity<Map<String, String>> updateAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            appointmentService.updateAppointment(appointment);
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "appointment updated");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return appointmentService.updateAppointment(appointment);
         }
         else {
             return validateTokenResponse;
@@ -100,11 +97,7 @@ public class AppointmentController {
     public ResponseEntity<Map<String, String>> cancelAppointment (@PathVariable("id") long id, @PathVariable("token") String token) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            appointmentService.cancelAppointment(id, token);
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "appointment deleted");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return appointmentService.cancelAppointment(id);
         }
         else {
             return validateTokenResponse;

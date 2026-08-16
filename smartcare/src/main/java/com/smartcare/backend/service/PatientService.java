@@ -119,7 +119,7 @@ public class PatientService {
         Patient patient = patientRepository.findById(patientId).orElse(null);
 
         try {
-            List<Appointment> appointments = appointmentRepository.filterByDoctorNameAndPatientId(doctorName, patientId).orElse(new ArrayList<>());
+            List<Appointment> appointments = appointmentRepository.findByDoctor_NameAndPatient_Id(doctorName, patientId).orElse(new ArrayList<>());
             response.put("status", "ok");
             response.put("data", appointments.stream().map(AppointmentDTO::to).toList());
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -136,7 +136,7 @@ public class PatientService {
     public ResponseEntity<Map<String, Object>> filterByDoctorAndCondition(String condition, String doctorName, long patientId) {
         Map<String, Object> response = new HashMap<>();
         try {
-            List<Appointment> appointments = appointmentRepository.filterByDoctorNameAndPatientId(doctorName, patientId).orElse(new ArrayList<>());
+            List<Appointment> appointments = appointmentRepository.findByDoctor_NameAndPatient_Id(doctorName, patientId).orElse(new ArrayList<>());
             List<Appointment> filteredAppointments = appointments.stream().filter(appointment -> appointment.getDoctor().getName().equalsIgnoreCase(doctorName)).collect(Collectors.toList());
             response.put("status", "ok");
             response.put("data", filteredAppointments.stream().map(AppointmentDTO::to).toList());

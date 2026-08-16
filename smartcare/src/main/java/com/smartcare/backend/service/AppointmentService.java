@@ -5,7 +5,6 @@ import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
-import com.smartcare.backend.repository.PatientRepository;
 import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
 import org.apache.juli.logging.Log;
@@ -16,24 +15,17 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
     private final Log log = (Log) LogFactory.getLog(this.getClass());
 
     private final AppointmentRepository appointmentRepository;
-    private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
-    private final TokenService  tokenService;
-    private final MyService myService;
 
-    public AppointmentService(AppointmentRepository appointmentRepository, PatientRepository patientRepository, DoctorRepository doctorRepository, TokenService tokenService, MyService myService) {
+    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository) {
         this.appointmentRepository = appointmentRepository;
-        this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
-        this.tokenService = tokenService;
-        this.myService = myService;
     }
 
     @Transactional
@@ -51,36 +43,21 @@ public class AppointmentService {
 
     @Transactional
     public ResponseEntity<Map<String, String>> updateAppointment(Appointment appointment) {
-        Map<String,String> map = new HashMap<>();
-        map.put("status","success");
-        map.put("message", "");
-
-        Optional<Appointment> optional = appointmentRepository.findById(appointment.getId());
-
-        if(optional.isPresent()) {
-            if(optional.get() == appointment) {
-                appointmentRepository.save(appointment);
-                boolean isValid = validateAppointment(appointment);
-
-                if(isValid) {
-                    map.put("message","appointment updated");
-                }
-                else {
-                    map.put("status","ko");
-                    map.put("message","appointment not saved");
-                }
-            }
-        }
-        else {
-            map.put("status","no appointment with id:"+appointment.getId());
+        Map<String, String> response = new HashMap<>();
+        if (appointment.getId() == null || !appointmentRepository.existsById(appointment.getId())) {
+            response.put("status", "ko");
+            response.put("message", "no appointment with id: " + appointment.getId());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
 
-        return new ResponseEntity<>(map, HttpStatus.OK);
+        appointmentRepository.save(appointment);
+        response.put("status", "success");
+        response.put("message", "appointment updated");
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @Transactional
-    public ResponseEntity<Map<String, String>> cancelAppointment(long id, String token) {
-        // TODO: validate token..
+    public ResponseEntity<Map<String, String>> cancelAppointment(long id) {
         Map<String,String> map = new HashMap<>();
         map.put("status","success");
 
@@ -99,8 +76,7 @@ public class AppointmentService {
     }
 
     @Transactional
-    public Map<String, Object> getAppointment(String patientName, LocalDate date, String token) {
-        // TODO: validate token..
+    public Map<String, Object> getAppointment(String patientName, LocalDate date) {
         Map<String,Object> doctorToAppointment = new HashMap<>();
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atStartOfDay().plusDays(1);
@@ -108,7 +84,7 @@ public class AppointmentService {
         List<Doctor> doctors = doctorRepository.findAll();
         doctors.forEach(doctor -> {
             Optional<List<Appointment>> optionalAppointments;
-            if(patientName != null && !patientName.isEmpty()) {
+            if(patientName == null || patientName.isBlank()) {
                 optionalAppointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
             }
             else {
@@ -122,24 +98,6 @@ public class AppointmentService {
         });
 
         return doctorToAppointment;
-    }
-
-    public boolean validateAppointment(Appointment oldAppointment) {
-        Appointment newAppointment = appointmentRepository.findById(oldAppointment.getId()).orElse(null);
-        if(newAppointment  == null) {
-            return false;
-        }
-        boolean isValid = false;
-
-        if(!oldAppointment.getDoctor().equals(newAppointment.getDoctor()))
-            isValid = true;
-        if(!oldAppointment.getAppointmentTime().equals(newAppointment.getAppointmentTime())
-                || !oldAppointment.getEndTime().equals(newAppointment.getEndTime()))
-            isValid = true;
-        if(!oldAppointment.getNotes().equals(newAppointment.getNotes()))
-            isValid = true;
-
-        return true;
     }
 
 }

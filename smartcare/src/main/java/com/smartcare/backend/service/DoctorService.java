@@ -48,8 +48,8 @@ public class DoctorService {
             return new ArrayList<>();
         }
 
-        LocalDateTime startLocalDateTime = LocalDateTime.from(date);
-        LocalDateTime endLocalDateTime = LocalDateTime.from(date.plusDays(1));
+        LocalDateTime startLocalDateTime = date.atStartOfDay();
+        LocalDateTime endLocalDateTime = date.plusDays(1).atStartOfDay();
         List<Appointment> appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctorId,
                 startLocalDateTime,
                 endLocalDateTime
