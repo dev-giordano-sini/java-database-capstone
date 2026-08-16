@@ -6,6 +6,12 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_appointment_doctor_time",
+                columnNames = {"doctor_id", "appointment_time"}
+        )
+)
 public class Appointment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +25,7 @@ public class Appointment {
     @NotNull
     private Patient patient;
     @Future
+    @Column(name = "appointment_time", nullable = false)
     private LocalDateTime appointmentTime;
     private int status; // 0 = Scheduled, 1 = Completed
     private String notes;

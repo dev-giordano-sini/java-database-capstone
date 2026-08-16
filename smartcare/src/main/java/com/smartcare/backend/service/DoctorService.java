@@ -8,7 +8,7 @@ import com.smartcare.backend.repository.DoctorRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class DoctorService {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;

@@ -1,8 +1,6 @@
 package com.smartcare.backend;
 
 
-import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -10,25 +8,28 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestControllerAdvice
 public class ValidationFailed {
 
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
-
-    @ExceptionHandler({
-            MethodArgumentNotValidException.class
-    })
-    public ResponseEntity<String> handle(MethodArgumentNotValidException e){
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handle(MethodArgumentNotValidException e) {
         List<String> errors = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(FieldError::getDefaultMessage)
                 .toList();
 
-        return  new ResponseEntity<>(errors.getFirst(), status);
+        return ResponseEntity.badRequest().body(new ApiError(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation failed",
+                errors
+        ));
+    }
+
+    public record ApiError(Instant timestamp, int status, String message, List<String> errors) {
     }
 }

@@ -9,7 +9,7 @@ import com.smartcare.backend.repository.AdminRepository;
 import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +22,7 @@ import java.util.Map;
 
 @Service
 public class MyService {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final TokenService tokenService;
     private final AdminRepository adminRepository;

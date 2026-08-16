@@ -56,3 +56,11 @@ not require a running PostgreSQL instance.
 
 Protected operations validate both the signature/expiration of the JWT and the
 role expected by the endpoint.
+
+## Engineering status
+
+The project is being hardened as a portfolio codebase. Automated CI runs the
+complete Maven verification lifecycle on every backend change. Before calling a
+release production-ready, the remaining priority is to move JWTs from URL paths
+to the `Authorization: Bearer` header and enforce resource ownership through
+Spring Security.

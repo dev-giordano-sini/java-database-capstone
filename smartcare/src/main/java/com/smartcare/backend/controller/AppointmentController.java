@@ -4,13 +4,12 @@ import com.smartcare.backend.DTO.AppointmentDTO;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.service.AppointmentService;
 import com.smartcare.backend.service.MyService;
+import com.smartcare.backend.service.TokenService;
 import jakarta.validation.Valid;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,13 +21,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/appointments")
 public class AppointmentController {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
-    @Autowired
-    private AppointmentService appointmentService;
+    private final AppointmentService appointmentService;
+    private final MyService myService;
+    private final TokenService tokenService;
 
-    @Autowired
-    private MyService myService;
+    public AppointmentController(AppointmentService appointmentService, MyService myService,
+                                 TokenService tokenService) {
+        this.appointmentService = appointmentService;
+        this.myService = myService;
+        this.tokenService = tokenService;
+    }
 
     @GetMapping("/{date}/{patientName}/{token}")
     public List<Object> getAppointments(@PathVariable("date") LocalDate date, @PathVariable("patientName") String patientName, @PathVariable("token") String token) {
@@ -46,7 +50,6 @@ public class AppointmentController {
     }
 
     @PostMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @Valid @RequestBody AppointmentDTO appointmentDTO) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         Map<String, String> response = new HashMap<>();
@@ -66,7 +69,8 @@ public class AppointmentController {
                     httpStatus = HttpStatus.CONFLICT;
                 }
                 case 1 -> {
-                    int saved = appointmentService.bookAppointment(appointment);
+                    String patientEmail = tokenService.extractIdentifier(token);
+                    int saved = appointmentService.bookAppointment(appointment, patientEmail);
                     response.put("status", saved == 1 ? "success" : "error");
                     response.put("message", saved == 1 ? "appointment booked" : "appointment not saved");
                     httpStatus = saved == 1 ? HttpStatus.CREATED : HttpStatus.INTERNAL_SERVER_ERROR;
@@ -82,11 +86,10 @@ public class AppointmentController {
     }
 
     @PutMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> updateAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            return appointmentService.updateAppointment(appointment);
+            return appointmentService.updateAppointment(appointment, tokenService.extractIdentifier(token));
         }
         else {
             return validateTokenResponse;
@@ -97,7 +100,7 @@ public class AppointmentController {
     public ResponseEntity<Map<String, String>> cancelAppointment (@PathVariable("id") long id, @PathVariable("token") String token) {
         ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            return appointmentService.cancelAppointment(id);
+            return appointmentService.cancelAppointment(id, tokenService.extractIdentifier(token));
         }
         else {
             return validateTokenResponse;

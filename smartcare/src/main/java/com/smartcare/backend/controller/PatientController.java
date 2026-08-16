@@ -6,11 +6,10 @@ import com.smartcare.backend.repository.PatientRepository;
 import com.smartcare.backend.service.MyService;
 import com.smartcare.backend.service.PatientService;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/patient")
 public class PatientController {
 
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     @Autowired
     private PatientService patientService;
@@ -46,7 +45,6 @@ public class PatientController {
     }
 
     @PostMapping()
-    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> createPatient(@RequestBody Patient patient) {
         int status = -1;
         Patient patientFromDb = patientRepository.findByEmailOrPhone(patient.getEmail(), patient.getPhone());

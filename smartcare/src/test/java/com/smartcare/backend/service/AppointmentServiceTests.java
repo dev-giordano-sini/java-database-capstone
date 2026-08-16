@@ -2,8 +2,10 @@ package com.smartcare.backend.service;
 
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
+import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
+import com.smartcare.backend.repository.PatientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -29,7 +31,9 @@ class AppointmentServiceTests {
     void setUp() {
         appointmentRepository = mock(AppointmentRepository.class);
         doctorRepository = mock(DoctorRepository.class);
-        appointmentService = new AppointmentService(appointmentRepository, doctorRepository);
+        PatientRepository patientRepository = mock(PatientRepository.class);
+        appointmentService = new AppointmentService(
+                appointmentRepository, doctorRepository, patientRepository);
     }
 
     @Test
@@ -38,7 +42,8 @@ class AppointmentServiceTests {
         appointment.setId(42L);
         when(appointmentRepository.existsById(42L)).thenReturn(false);
 
-        ResponseEntity<Map<String, String>> response = appointmentService.updateAppointment(appointment);
+        ResponseEntity<Map<String, String>> response = appointmentService.updateAppointment(
+                appointment, "patient@example.com");
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("ko", response.getBody().get("status"));
@@ -60,5 +65,23 @@ class AppointmentServiceTests {
 
         verify(appointmentRepository).findByDoctorIdAndAppointmentTimeBetween(
                 7L, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
+    }
+
+    @Test
+    void patientCannotUpdateAnotherPatientsAppointment() {
+        Patient owner = new Patient();
+        owner.setEmail("owner@example.com");
+        Appointment saved = new Appointment();
+        saved.setId(9L);
+        saved.setPatient(owner);
+        Appointment update = new Appointment();
+        update.setId(9L);
+        when(appointmentRepository.findById(9L)).thenReturn(Optional.of(saved));
+
+        ResponseEntity<Map<String, String>> response = appointmentService.updateAppointment(
+                update, "attacker@example.com");
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        verify(appointmentRepository, never()).save(update);
     }
 }
