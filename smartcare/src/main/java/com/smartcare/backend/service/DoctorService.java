@@ -11,6 +11,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.juli.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,11 +28,14 @@ public class DoctorService {
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
-    public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository, TokenService tokenService) {
+    public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository,
+                         TokenService tokenService, PasswordEncoder passwordEncoder) {
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -79,6 +83,7 @@ public class DoctorService {
         }
 
         try {
+            doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
             doctorRepository.save(doctor);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -179,8 +184,13 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findByEmail(loginDTO.getIdentifier());
 
         if (doctor == null) {
-            response.put("message", "Doctor's email not found");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            response.put("message", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
+
+        if (!passwordEncoder.matches(loginDTO.getPassword(), doctor.getPassword())) {
+            response.put("message", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
         }
 
         String token = tokenService.generateToken(loginDTO.getIdentifier());

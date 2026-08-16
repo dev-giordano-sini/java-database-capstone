@@ -23,6 +23,8 @@ public class Patient {
     @NotNull
     private String email;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotNull
+    @Size(min = 6)
     private String password;
     @Pattern(regexp = "\\d{10}")
     private String phone;

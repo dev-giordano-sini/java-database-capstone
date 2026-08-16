@@ -1,5 +1,5 @@
-# Step 1: Use Maven with JDK 17 to build the app
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
+# Build with the same Java release configured in pom.xml.
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
@@ -8,12 +8,11 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-# Step 2: Use lightweight JRE 17 for running the app
-FROM eclipse-temurin:17.0.15_6-jre
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY --from=builder /app/target/back-end-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/smartcare-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 

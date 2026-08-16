@@ -3,6 +3,8 @@ package com.smartcare.backend.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -28,18 +30,20 @@ public class Doctor {
     private String email;
 
     @Size(min = 6)
+    @NotNull
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Pattern(regexp = "\\d{10}")
     private String phone;
 
+    @ElementCollection
     @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
     @Column(name = "time_slot")
     private List<String> availableTimes;
 
-    @NotNull
-    @Size(min = 0, max = 5)
+    @Min(0)
+    @Max(5)
     private int rating;
 
     public Long getId() {

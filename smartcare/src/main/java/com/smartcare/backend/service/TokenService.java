@@ -1,6 +1,5 @@
 package com.smartcare.backend.service;
 
-import com.smartcare.backend.DTO.Login;
 import com.smartcare.backend.model.Admin;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.model.Patient;
@@ -9,6 +8,8 @@ import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,16 +23,15 @@ import java.util.Map;
 @Component
 public class TokenService {
 
-    //TODO: this must will not return a reponse
-    //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    //private String password;
-
     private final AdminRepository adminRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
 
-    @Value("${JWT.SECRET.KEY}:''")
+    @Value("${jwt.secret-key}")
     private String secretKey;
+
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
 
     public TokenService(AdminRepository adminRepository, DoctorRepository doctorRepository, PatientRepository patientRepository) {
         this.adminRepository = adminRepository;
@@ -40,7 +40,7 @@ public class TokenService {
     }
 
     public String generateToken(String identifier) {
-        Map<String, Object> claims = new HashMap<String, Object>();
+        Map<String, Object> claims = new HashMap<>();
         Admin admin = adminRepository.findByUsername(identifier);
         Doctor doctor = doctorRepository.findByEmail(identifier);
         Patient patient = patientRepository.findByEmail(identifier);
@@ -54,45 +54,42 @@ public class TokenService {
         else if(patient != null) {
             role = "patient";
         }
+        if (role.isEmpty()) {
+            throw new IllegalArgumentException("Cannot create a token for an unknown account");
+        }
         claims.put("role", role);
         return createToken(claims, identifier);
     }
 
     public String extractIdentifier(String token) {
-        return Jwts.parserBuilder().build().parseClaimsJws(token).getBody().getSubject();
+        return parseClaims(token).getSubject();
     }
 
-    public boolean validateToken(String token, String user) {
-        String roleFromToken = Jwts.parserBuilder().build().parseClaimsJws(token).getBody().get("role", String.class);
-
-        Admin admin = adminRepository.findByUsername(user);
-        Doctor doctor = doctorRepository.findByEmail(user);
-        Patient patient = patientRepository.findByEmail(user);
-        String role = null;
-        if(admin != null) {
-            role = "admin";
+    public boolean validateToken(String token, String expectedRole) {
+        try {
+            Claims claims = parseClaims(token);
+            return expectedRole.equals(claims.get("role", String.class))
+                    && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException exception) {
+            return false;
         }
-        else if(doctor != null) {
-            role = "doctor";
-        }
-        else if(patient != null) {
-            role = "patient";
-        }
-
-        long expiration = Jwts.parserBuilder().build().parseClaimsJws(token).getBody().getExpiration().getTime();
-        long now = new Date().getTime();
-
-        return roleFromToken.equals(role) && expiration >= now;
     }
 
-    public Map<String,String> decodeToken(String token) {return null; }
+    public Map<String, String> decodeToken(String token) {
+        Claims claims = parseClaims(token);
+        Map<String, String> tokenData = new HashMap<>();
+        tokenData.put("identifier", claims.getSubject());
+        tokenData.put("role", claims.get("role", String.class));
+        tokenData.put("expirationDate", claims.getExpiration().toInstant().toString());
+        return tokenData;
+    }
 
     private String createToken(Map<String, Object> claims, String identifier) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(identifier)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10080)) // 7 days
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -100,5 +97,13 @@ public class TokenService {
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
