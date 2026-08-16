@@ -46,10 +46,11 @@ public class MyService {
     }
 
 
-    public ResponseEntity<Map<String, String>> validateToken(String token, String user) {
+    public ResponseEntity<Map<String, String>> validateToken(String token, String... allowedRoles) {
         Map<String, String> response = new HashMap<>();
 
-        if(tokenService.validateToken(token, user)) {
+        boolean valid = Arrays.stream(allowedRoles).anyMatch(role -> tokenService.validateToken(token, role));
+        if(valid) {
             response.put("status", "success");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }

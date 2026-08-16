@@ -9,8 +9,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,5 +36,27 @@ class DoctorServiceTests {
                 doctorRepository, appointmentRepository, tokenService, passwordEncoder);
 
         assertEquals(List.of("09:00", "14:00"), service.getDoctorAvailability(3L, date));
+    }
+
+    @Test
+    void doctorFilterGroupsDoctorsByMatchingPeriodSlots() {
+        DoctorRepository doctorRepository = mock(DoctorRepository.class);
+        AppointmentRepository appointmentRepository = mock(AppointmentRepository.class);
+        Doctor doctor = new Doctor();
+        doctor.setName("Dr Test");
+        doctor.setAvailableTimes(List.of("09:00", "14:00"));
+        when(doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase("Test", "Cardiology"))
+                .thenReturn(Optional.of(List.of(doctor)));
+        DoctorService service = new DoctorService(
+                doctorRepository,
+                appointmentRepository,
+                mock(TokenService.class),
+                mock(PasswordEncoder.class));
+
+        Map<String, Object> result = service.filterDoctorsByNameSpecilityandTime(
+                "Test", "Cardiology", "AM");
+
+        assertEquals(List.of(doctor), result.get("09:00"));
+        assertNull(result.get("14:00"));
     }
 }

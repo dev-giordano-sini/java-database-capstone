@@ -115,6 +115,7 @@ public class DoctorService {
         }
 
         try {
+            doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
             doctorRepository.save(doctor);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -208,7 +209,7 @@ public class DoctorService {
 
     @Transactional
     public Map<String, Object> findDoctorByName(String doctorName) {
-        List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(null);
+        List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(List.of());
         Map<String, Object> response = new HashMap<>();
 
         doctors.forEach(doctor -> {
@@ -237,34 +238,19 @@ public class DoctorService {
 
     private Map<String, Object> filterDoctorsByTime(List<Doctor> doctors, String amOrPm) {
         Map<String, Object> response = new HashMap<>();
-        List<Doctor> doctorFilterByPeriod = doctors.stream().filter(doctor ->
-                doctor.getAvailableTimes().stream().anyMatch(timeStr -> {
-                    LocalTime time = LocalTime.parse(timeStr);
-                    return amOrPm.equalsIgnoreCase("AM") ? time.isBefore(LocalTime.NOON)
-                            : time.isAfter(LocalTime.NOON);
+        doctors.forEach(doctor -> doctor.getAvailableTimes().stream()
+                .filter(timeString -> {
+                    LocalTime time = LocalTime.parse(timeString);
+                    return amOrPm.equalsIgnoreCase("AM")
+                            ? time.isBefore(LocalTime.NOON)
+                            : !time.isBefore(LocalTime.NOON);
                 })
-        ).collect(Collectors.toList());
-
-        doctorFilterByPeriod.forEach(doctor -> {
-            List<String> period = doctor.getAvailableTimes();
-            List<Doctor> doctorList = null;
-            for (String periodStr : period) {
-                if (!response.containsKey(periodStr)) {
-                    response.put(periodStr, new ArrayList<>());
-                } else {
-                    try {
-                        doctorList = (List<Doctor>) response.get(periodStr);
-                    } catch (ClassCastException e) {
-                        log.error(e.getMessage());
-                    }
-                }
-
-                if (doctorList != null) {
-                    doctorList.add(doctor);
-                }
-
-            }
-        });
+                .forEach(timeString -> {
+                    @SuppressWarnings("unchecked")
+                    List<Doctor> doctorsAtTime = (List<Doctor>) response.computeIfAbsent(
+                            timeString, ignored -> new ArrayList<Doctor>());
+                    doctorsAtTime.add(doctor);
+                }));
 
         return response;
     }

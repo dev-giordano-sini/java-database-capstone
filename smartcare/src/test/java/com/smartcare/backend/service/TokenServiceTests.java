@@ -40,8 +40,9 @@ class TokenServiceTests {
         String token = tokenService.generateToken(patient.getEmail());
 
         assertTrue(tokenService.validateToken(token, "patient"));
+        assertTrue(tokenService.validateToken("Bearer " + token, "patient"));
         assertFalse(tokenService.validateToken(token, "doctor"));
-        assertEquals(patient.getEmail(), tokenService.extractIdentifier(token));
+        assertEquals(patient.getEmail(), tokenService.extractIdentifier("Bearer " + token));
         assertEquals("patient", tokenService.decodeToken(token).get("role"));
     }
 

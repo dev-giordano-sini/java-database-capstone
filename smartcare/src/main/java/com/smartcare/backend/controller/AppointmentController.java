@@ -13,13 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/appointments")
+@RequestMapping("${api.path}appointments")
 public class AppointmentController {
     private final Log log = LogFactory.getLog(this.getClass());
 
@@ -34,24 +32,28 @@ public class AppointmentController {
         this.tokenService = tokenService;
     }
 
-    @GetMapping("/{date}/{patientName}/{token}")
-    public List<Object> getAppointments(@PathVariable("date") LocalDate date, @PathVariable("patientName") String patientName, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "doctor");
+    @GetMapping
+    public ResponseEntity<?> getAppointments(@RequestParam LocalDate date,
+                                             @RequestParam(required = false) String patientName,
+                                             @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "doctor");
 
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
             Map<String, Object> appointments = appointmentService.getAppointment(patientName, date);
-            return appointments.values().stream().toList();
+            return ResponseEntity.ok(appointments.values().stream().toList());
 
         }
         else {
             log.error(validateTokenResponse.getStatusCode() + ", " + validateTokenResponse.getBody().toString());
-            return new ArrayList<>();
+            return validateTokenResponse;
         }
     }
 
-    @PostMapping("/{token}")
-    public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @Valid @RequestBody AppointmentDTO appointmentDTO) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @PostMapping
+    public ResponseEntity<Map<String, String>> bookAppointment(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody AppointmentDTO appointmentDTO) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         Map<String, String> response = new HashMap<>();
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
             Appointment appointment = AppointmentDTO.getAppointment(appointmentDTO);
@@ -69,7 +71,7 @@ public class AppointmentController {
                     httpStatus = HttpStatus.CONFLICT;
                 }
                 case 1 -> {
-                    String patientEmail = tokenService.extractIdentifier(token);
+                    String patientEmail = tokenService.extractIdentifier(authorization);
                     int saved = appointmentService.bookAppointment(appointment, patientEmail);
                     response.put("status", saved == 1 ? "success" : "error");
                     response.put("message", saved == 1 ? "appointment booked" : "appointment not saved");
@@ -85,22 +87,25 @@ public class AppointmentController {
         }
     }
 
-    @PutMapping("/{token}")
-    public ResponseEntity<Map<String, String>> updateAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @PutMapping
+    public ResponseEntity<Map<String, String>> updateAppointment(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody Appointment appointment) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            return appointmentService.updateAppointment(appointment, tokenService.extractIdentifier(token));
+            return appointmentService.updateAppointment(appointment, tokenService.extractIdentifier(authorization));
         }
         else {
             return validateTokenResponse;
         }
     }
 
-    @DeleteMapping("/{id}/{token}")
-    public ResponseEntity<Map<String, String>> cancelAppointment (@PathVariable("id") long id, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> cancelAppointment(
+            @PathVariable long id, @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            return appointmentService.cancelAppointment(id, tokenService.extractIdentifier(token));
+            return appointmentService.cancelAppointment(id, tokenService.extractIdentifier(authorization));
         }
         else {
             return validateTokenResponse;

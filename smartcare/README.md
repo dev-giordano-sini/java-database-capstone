@@ -16,6 +16,7 @@ Spring MVC, Spring Data JPA, PostgreSQL, BCrypt password hashing, and signed JWT
 ```bash
 cp .env.example .env
 # Replace JWT_SECRET in .env; generate one with: openssl rand -base64 32
+# Replace the bootstrap administrator credentials as well.
 docker compose up --build
 ```
 
@@ -29,6 +30,8 @@ export DB_URL=jdbc:postgresql://localhost:5432/smartcare
 export DB_USERNAME=smartcare
 export DB_PASSWORD=smartcare
 export JWT_SECRET="$(openssl rand -base64 32)"
+export ADMIN_USERNAME=admin
+export ADMIN_PASSWORD='replace-with-a-strong-password'
 mvn spring-boot:run
 ```
 
@@ -50,17 +53,16 @@ not require a running PostgreSQL instance.
 
 - `/api/admin` — administrator authentication and operations
 - `/api/doctor` — doctor login, availability, and management
-- `/patient` — patient registration, login, records, and filters
-- `/appointments` — appointment search, booking, update, and cancellation
+- `/api/patients` — patient registration, login, records, and filters
+- `/api/appointments` — appointment search, booking, update, and cancellation
 - `/api/prescription` — prescription creation and retrieval
 
-Protected operations validate both the signature/expiration of the JWT and the
-role expected by the endpoint.
+Protected operations receive `Authorization: Bearer <token>` and validate both
+the signature/expiration of the JWT and the role expected by the endpoint.
 
 ## Engineering status
 
-The project is being hardened as a portfolio codebase. Automated CI runs the
-complete Maven verification lifecycle on every backend change. Before calling a
-release production-ready, the remaining priority is to move JWTs from URL paths
-to the `Authorization: Bearer` header and enforce resource ownership through
-Spring Security.
+The project is intentionally scoped as a portfolio backend rather than
+production medical software. Automated CI runs the complete Maven verification
+lifecycle on every backend change. Appointment mutations derive the patient
+identity from the signed token and enforce resource ownership in the service.

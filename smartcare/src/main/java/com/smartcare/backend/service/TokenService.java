@@ -62,12 +62,12 @@ public class TokenService {
     }
 
     public String extractIdentifier(String token) {
-        return parseClaims(token).getSubject();
+        return parseClaims(normalizeToken(token)).getSubject();
     }
 
     public boolean validateToken(String token, String expectedRole) {
         try {
-            Claims claims = parseClaims(token);
+            Claims claims = parseClaims(normalizeToken(token));
             return expectedRole.equals(claims.get("role", String.class))
                     && claims.getExpiration().after(new Date());
         } catch (JwtException | IllegalArgumentException exception) {
@@ -76,7 +76,7 @@ public class TokenService {
     }
 
     public Map<String, String> decodeToken(String token) {
-        Claims claims = parseClaims(token);
+        Claims claims = parseClaims(normalizeToken(token));
         Map<String, String> tokenData = new HashMap<>();
         tokenData.put("identifier", claims.getSubject());
         tokenData.put("role", claims.get("role", String.class));
@@ -105,5 +105,19 @@ public class TokenService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private String normalizeToken(String tokenOrAuthorizationHeader) {
+        if (tokenOrAuthorizationHeader == null || tokenOrAuthorizationHeader.isBlank()) {
+            throw new IllegalArgumentException("Missing authentication token");
+        }
+        if (tokenOrAuthorizationHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String token = tokenOrAuthorizationHeader.substring(7).trim();
+            if (token.isEmpty()) {
+                throw new IllegalArgumentException("Missing bearer token");
+            }
+            return token;
+        }
+        return tokenOrAuthorizationHeader;
     }
 }

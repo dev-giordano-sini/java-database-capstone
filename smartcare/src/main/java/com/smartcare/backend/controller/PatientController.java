@@ -5,9 +5,7 @@ import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.PatientRepository;
 import com.smartcare.backend.service.MyService;
 import com.smartcare.backend.service.PatientService;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,25 +14,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/patient")
+@RequestMapping("${api.path}patients")
 public class PatientController {
 
-    private final Log log = LogFactory.getLog(this.getClass());
+    private final PatientService patientService;
+    private final MyService myService;
+    private final PatientRepository patientRepository;
 
-    @Autowired
-    private PatientService patientService;
+    public PatientController(PatientService patientService, MyService myService,
+                             PatientRepository patientRepository) {
+        this.patientService = patientService;
+        this.myService = myService;
+        this.patientRepository = patientRepository;
+    }
 
-    @Autowired
-    private MyService myService;
-
-    @Autowired
-    private PatientRepository patientRepository;
-
-    @GetMapping("/{token}")
-    public ResponseEntity<Map<String, Object>> getPatient(@PathVariable("token") String token){
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "patient");
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getPatient(
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "patient");
         if(responseService.getStatusCode() == HttpStatus.OK) {
-            return patientService.getPatientDetails(token);
+            return patientService.getPatientDetails(authorization);
         }
         else {
             Map<String, Object> response = new HashMap<>();
@@ -44,8 +43,8 @@ public class PatientController {
         }
     }
 
-    @PostMapping()
-    public ResponseEntity<Map<String, String>> createPatient(@RequestBody Patient patient) {
+    @PostMapping
+    public ResponseEntity<Map<String, String>> createPatient(@Valid @RequestBody Patient patient) {
         int status = -1;
         Patient patientFromDb = patientRepository.findByEmailOrPhone(patient.getEmail(), patient.getPhone());
         //if not exists!
@@ -57,7 +56,8 @@ public class PatientController {
         switch (status) {
             case -1 -> {
                 response.put("status", "ko");
-                response.put("message", "Patient with email id or phone already exist");
+                response.put("message", "Patient with email or phone already exists");
+                httpStatus = HttpStatus.CONFLICT;
             }
             case 0->{
                 response.put("status", "ko");
@@ -66,7 +66,7 @@ public class PatientController {
             case 1->{
                 response.put("status", "ok");
                 response.put("message", "Signup successful");
-                httpStatus = HttpStatus.OK;
+                httpStatus = HttpStatus.CREATED;
             }
         }
 
@@ -75,19 +75,17 @@ public class PatientController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> patientLogin(String email, String password) {
-        Login login = new Login();
-        login.setIdentifier(email);
-        login.setPassword(password);
+    public ResponseEntity<Map<String, String>> patientLogin(@Valid @RequestBody Login login) {
         return myService.validatePatientLogin(login);
     }
 
 
-    @GetMapping("/{id}/{token}")
-    public ResponseEntity<Map<String, Object>> getPatientAppointments(@PathVariable("id") long patientId, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "patient");
+    @GetMapping("/me/appointments")
+    public ResponseEntity<Map<String, Object>> getPatientAppointments(
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "patient");
         if(responseService.getStatusCode() == HttpStatus.OK) {
-            return patientService.getPatientAppointment(patientId, token);
+            return patientService.getPatientAppointments(authorization);
         }
         else {
             Map<String, Object> response = new HashMap<>();
@@ -97,12 +95,15 @@ public class PatientController {
         }
     }
 
-    @GetMapping("/filter/{condition}/{name}/{token}")
-    public ResponseEntity<Map<String, Object>> getFilteredPatientAppointments(@PathVariable("condition") String condition, @PathVariable("name") String doctorName, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "patient");
+    @GetMapping("/me/appointments/filter")
+    public ResponseEntity<Map<String, Object>> getFilteredPatientAppointments(
+            @RequestParam String condition,
+            @RequestParam String doctorName,
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "patient");
 
         if(responseService.getStatusCode() == HttpStatus.OK) {
-            return myService.filterPatient(condition, doctorName, token);
+            return myService.filterPatient(condition, doctorName, authorization);
         }
         else {
             Map<String, Object> response = new HashMap<>();

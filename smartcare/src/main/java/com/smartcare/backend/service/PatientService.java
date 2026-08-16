@@ -56,14 +56,14 @@ public class PatientService {
     }
 
     @Transactional
-    public ResponseEntity<Map<String, Object>> getPatientAppointment(Long patientId, String token) {
+    public ResponseEntity<Map<String, Object>> getPatientAppointments(String token) {
         Map<String, Object> response = new HashMap<>();
 
         String patientEmail = tokenService.extractIdentifier(token);
         Patient patient = patientRepository.findByEmail(patientEmail);
 
-        if(patient != null && patient.getId().compareTo(patientId) == 0) {
-            List<Appointment> appointments = appointmentRepository.findByPatientId(patientId);
+        if(patient != null) {
+            List<Appointment> appointments = appointmentRepository.findByPatientId(patient.getId());
             response.put("status", "ok");
             response.put("data", appointments.stream().map(AppointmentDTO::to).toList());
             return new ResponseEntity<>(response, HttpStatus.OK);
