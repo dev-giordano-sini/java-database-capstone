@@ -4,51 +4,56 @@ import com.smartcare.backend.DTO.AppointmentDTO;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.service.AppointmentService;
 import com.smartcare.backend.service.MyService;
+import com.smartcare.backend.service.TokenService;
 import jakarta.validation.Valid;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/appointments")
+@RequestMapping("${api.path}appointments")
 public class AppointmentController {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
-    @Autowired
-    private AppointmentService appointmentService;
+    private final AppointmentService appointmentService;
+    private final MyService myService;
+    private final TokenService tokenService;
 
-    @Autowired
-    private MyService myService;
+    public AppointmentController(AppointmentService appointmentService, MyService myService,
+                                 TokenService tokenService) {
+        this.appointmentService = appointmentService;
+        this.myService = myService;
+        this.tokenService = tokenService;
+    }
 
-    @GetMapping("/{date}/{patientName}/{token}")
-    public List<Object> getAppointments(@PathVariable("date") LocalDate date, @PathVariable("patientName") String patientName, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "doctor");
+    @GetMapping
+    public ResponseEntity<?> getAppointments(@RequestParam LocalDate date,
+                                             @RequestParam(required = false) String patientName,
+                                             @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "doctor");
 
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            Map<String, Object> appointments = appointmentService.getAppointment(patientName, date, token);
-            return appointments.values().stream().toList();
+            Map<String, Object> appointments = appointmentService.getAppointment(patientName, date);
+            return ResponseEntity.ok(appointments.values().stream().toList());
 
         }
         else {
             log.error(validateTokenResponse.getStatusCode() + ", " + validateTokenResponse.getBody().toString());
-            return new ArrayList<>();
+            return validateTokenResponse;
         }
     }
 
-    @PostMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> bookAppointment(@PathVariable("token") String token, @Valid @RequestBody AppointmentDTO appointmentDTO) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @PostMapping
+    public ResponseEntity<Map<String, String>> bookAppointment(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody AppointmentDTO appointmentDTO) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         Map<String, String> response = new HashMap<>();
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
             Appointment appointment = AppointmentDTO.getAppointment(appointmentDTO);
@@ -61,14 +66,16 @@ public class AppointmentController {
                     httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
                 case 0 -> {
-                    response.put("status", "success");
-                    response.put("message", "appointment validated");
-                    httpStatus = HttpStatus.CREATED;
+                    response.put("status", "error");
+                    response.put("message", "appointment time unavailable");
+                    httpStatus = HttpStatus.CONFLICT;
                 }
                 case 1 -> {
-                    response.put("status", "error");
-                    response.put("message", "Invalid date");
-                    httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+                    String patientEmail = tokenService.extractIdentifier(authorization);
+                    int saved = appointmentService.bookAppointment(appointment, patientEmail);
+                    response.put("status", saved == 1 ? "success" : "error");
+                    response.put("message", saved == 1 ? "appointment booked" : "appointment not saved");
+                    httpStatus = saved == 1 ? HttpStatus.CREATED : HttpStatus.INTERNAL_SERVER_ERROR;
                 }
             }
 
@@ -80,31 +87,25 @@ public class AppointmentController {
         }
     }
 
-    @PutMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> updateAppointment(@PathVariable("token") String token, @RequestBody Appointment appointment) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @PutMapping
+    public ResponseEntity<Map<String, String>> updateAppointment(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody Appointment appointment) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            appointmentService.updateAppointment(appointment);
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "appointment updated");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return appointmentService.updateAppointment(appointment, tokenService.extractIdentifier(authorization));
         }
         else {
             return validateTokenResponse;
         }
     }
 
-    @DeleteMapping("/{id}/{token}")
-    public ResponseEntity<Map<String, String>> cancelAppointment (@PathVariable("id") long id, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(token, "patient");
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> cancelAppointment(
+            @PathVariable long id, @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> validateTokenResponse = myService.validateToken(authorization, "patient");
         if(validateTokenResponse.getStatusCode() == HttpStatus.OK) {
-            appointmentService.cancelAppointment(id, token);
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "appointment deleted");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return appointmentService.cancelAppointment(id, tokenService.extractIdentifier(authorization));
         }
         else {
             return validateTokenResponse;

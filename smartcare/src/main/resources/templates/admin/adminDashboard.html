@@ -1,40 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}">
-        <link rel="stylesheet" th:href="@{/assets/css/style.css}">
-        <script th:src="@{/js/render.js}" defer></script>
-        <script th:src="@{/js/util.js}" defer></script>
-        <script th:src="@{/js/components/header.js}" defer></script>
-        <script th:src="@{/js/components/footer.js}" defer></script>
-        <title>
-            Admin Dashboard
-        </title>     
-    </head>
-    <body>
-        <div class="container">
-            <div class="wrapper">
-                <div id="header">
-                    <button class="btn_add" onclick="addDoctor">
-                        Add doctor
-                    </button>                    
-                </div>
-                <main class="class-content">
-                    <input type="text" id="searchBar" placeholder="search by doctor name" />
-                    <select>
-                        <option value="sort_by_time">Sorting by time</option>
-                        <option value="filter_by_spec">Filtering by specialty</option>
-                    </select>
-                    <div id="content"></div>
-                </main>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin workspace · SmartCare</title>
+    <link rel="stylesheet" th:href="@{/assets/css/smartcare.css}">
+    <script type="module" th:src="@{/js/smartcare/dashboard.js}" defer></script>
+</head>
+<body data-page="admin">
+<div class="page-shell dashboard-shell">
+    <header th:replace="~{fragments/layout :: header('admin')}"></header>
+    <main class="dashboard">
+        <aside class="dashboard-sidebar">
+            <span class="eyebrow">Administration</span><h1>Clinical team</h1>
+            <p>Add doctors, review their specialties, and keep the directory accurate.</p>
+            <button class="button button-primary button-block" data-open-doctor-form>+ Add doctor</button>
+        </aside>
+        <section class="dashboard-content">
+            <div class="dashboard-toolbar">
+                <div><span class="eyebrow">Directory</span><h2>Doctors</h2></div>
+                <label class="search-field"><span>Search</span><input type="search" placeholder="Name or specialty" data-doctor-search></label>
             </div>
+            <div class="metric-row">
+                <article class="metric"><span>Total doctors</span><strong data-doctor-count>—</strong></article>
+                <article class="metric"><span>Specialties</span><strong data-specialty-count>—</strong></article>
+                <article class="metric"><span>Directory status</span><strong class="metric-good">Active</strong></article>
+            </div>
+            <div class="card-grid compact-grid" data-admin-doctors><article class="skeleton-card"></article></div>
+            <section class="statistics-panel">
+                <div><span class="eyebrow">Usage</span><h2>Appointments by month</h2></div>
+                <div class="statistics-chart" data-appointment-statistics><article class="skeleton-row"></article></div>
+            </section>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+<dialog class="signup-dialog" data-doctor-dialog>
+    <button class="dialog-close" data-dialog-close type="button">×</button>
+    <span class="eyebrow">New team member</span><h2>Add a doctor</h2>
+    <form data-doctor-form>
+        <div class="form-grid">
+            <label>Full name<input name="name" required minlength="3"></label>
+            <label>Specialty<input name="specialty" required minlength="3"></label>
+            <label>Email<input name="email" type="email" required></label>
+            <label>Temporary password<input name="password" type="password" minlength="6" required></label>
+            <label>Phone<input name="phone" pattern="[0-9]{10}" required></label>
+            <label>Rating<input name="rating" type="number" min="0" max="5" value="0" required></label>
+            <label class="full-field">Profile photo URL <small>HTTPS URL or local /assets/images path</small><input name="profileImageUrl" pattern="(?:https://.*|/assets/images/[A-Za-z0-9_-]+\.(?:png|jpg|jpeg|webp|svg))" placeholder="/assets/images/doctor_name.svg"></label>
+            <label class="full-field">Available times <small>Comma separated, e.g. 09:00, 10:00</small><input name="availableTimes" value="09:00, 10:00, 14:00" required></label>
         </div>
-        <script type="module" src="../js/services/adminDashboard.js" defer></script>
-        <script type="module" src="../js/components/doctorCard.js" defer></script>
-    </body>
-    <div id="modal" class="modal">
-        <span id="closeModal" class="close">&times;</span>
-        <div id="modal-body"></div>
-      </div>
-      
-</html>
+        <p class="form-error" data-doctor-error hidden></p>
+        <button class="button button-primary button-block">Save doctor</button>
+    </form>
+</dialog>
+<div th:replace="~{fragments/layout :: toasts}"></div>
+</body></html>

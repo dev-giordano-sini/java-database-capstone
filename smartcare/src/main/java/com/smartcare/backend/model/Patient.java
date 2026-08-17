@@ -6,30 +6,42 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
 
 
 @Entity
+@Table(name = "patients")
 public class Patient {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @NotNull
     @Size(min = 3, max = 100)
+    @Column(nullable = false, length = 100)
     private String name;
     @Email
     @NotNull
+    @Column(nullable = false, unique = true, length = 254)
     private String email;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotNull
+    @Size(min = 6)
+    @Column(nullable = false, length = 60)
     private String password;
     @Pattern(regexp = "\\d{10}")
+    @Column(nullable = false, unique = true, length = 10)
     private String phone;
     @NotNull
     @Size(max = 255)
+    @Column(nullable = false, length = 255)
     private String address;
     @Past
+    @NotNull
+    @Column(nullable = false)
     private LocalDateTime birthdate;
     @JsonIgnore
     private String alias;

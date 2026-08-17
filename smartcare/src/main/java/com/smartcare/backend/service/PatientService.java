@@ -2,40 +2,39 @@ package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.AppointmentDTO;
 import com.smartcare.backend.model.Appointment;
-import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
-import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
 import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PatientService {
-    Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final PatientRepository patientRepository;
     private final TokenService tokenService;
     private final AppointmentRepository appointmentRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     private static final String PAST_CONDITION = "PAST";
     private static final String FUTURE_CONDITION = "FUTURE";
 
-    public PatientService(PatientRepository patientRepository, TokenService tokenService, AppointmentRepository appointmentRepository) {
+    public PatientService(PatientRepository patientRepository, TokenService tokenService,
+                          AppointmentRepository appointmentRepository, PasswordEncoder passwordEncoder) {
         this.patientRepository = patientRepository;
         this.tokenService = tokenService;
         this.appointmentRepository = appointmentRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -47,6 +46,7 @@ public class PatientService {
      */
     public int createPatient(Patient patient) {
         try {
+            patient.setPassword(passwordEncoder.encode(patient.getPassword()));
             patientRepository.save(patient);
             return 1;
         } catch (Exception e) {
@@ -56,15 +56,14 @@ public class PatientService {
     }
 
     @Transactional
-    public ResponseEntity<Map<String, Object>> getPatientAppointment(Long patientId, String token) {
+    public ResponseEntity<Map<String, Object>> getPatientAppointments(String token) {
         Map<String, Object> response = new HashMap<>();
 
-        // retreve mail from token;
-        String patientEmail = "";//tokenService.decode(token)
+        String patientEmail = tokenService.extractIdentifier(token);
         Patient patient = patientRepository.findByEmail(patientEmail);
 
-        if(patient != null && patient.getId().compareTo(patientId) == 0) {
-            List<Appointment> appointments = appointmentRepository.findByPatientId(patientId);
+        if(patient != null) {
+            List<Appointment> appointments = appointmentRepository.findByPatientId(patient.getId());
             response.put("status", "ok");
             response.put("data", appointments.stream().map(AppointmentDTO::to).toList());
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -104,9 +103,9 @@ public class PatientService {
     private List<AppointmentDTO> getAppointmentsByCondition(String condition, Long patientId) {
         List<Appointment> appointments = appointmentRepository.findByPatientId(patientId);
         List<Appointment> filteredAppointment = appointments.stream().filter(appointment -> {
-            return condition.equalsIgnoreCase("past") ?
-                    appointment.getAppointmentTime().isBefore(LocalDateTime.now().minusDays(1)) :
-                    appointment.getAppointmentTime().isAfter(LocalDateTime.now().plusDays(1));
+            return condition.equalsIgnoreCase("past")
+                    ? appointment.getAppointmentTime().isBefore(LocalDateTime.now())
+                    : appointment.getAppointmentTime().isAfter(LocalDateTime.now());
         }).toList();
 
         return filteredAppointment.stream().map(AppointmentDTO::to).toList();
@@ -116,10 +115,8 @@ public class PatientService {
     public ResponseEntity<Map<String, Object>> filterByDoctor(String doctorName, long patientId) {
         Map<String, Object> response = new HashMap<>();
 
-        Patient patient = patientRepository.findById(patientId).orElse(null);
-
         try {
-            List<Appointment> appointments = appointmentRepository.filterByDoctorNameAndPatientId(doctorName, patientId).orElse(new ArrayList<>());
+            List<Appointment> appointments = appointmentRepository.findByDoctor_NameIgnoreCaseAndPatient_Id(doctorName, patientId);
             response.put("status", "ok");
             response.put("data", appointments.stream().map(AppointmentDTO::to).toList());
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -135,11 +132,23 @@ public class PatientService {
 
     public ResponseEntity<Map<String, Object>> filterByDoctorAndCondition(String condition, String doctorName, long patientId) {
         Map<String, Object> response = new HashMap<>();
+        if (!checkCondition(condition)) {
+            response.put("status", "error");
+            response.put("message", "Invalid condition passed");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
         try {
-            List<Appointment> appointments = appointmentRepository.filterByDoctorNameAndPatientId(doctorName, patientId).orElse(new ArrayList<>());
-            List<Appointment> filteredAppointments = appointments.stream().filter(appointment -> appointment.getDoctor().getName().equalsIgnoreCase(doctorName)).collect(Collectors.toList());
+            List<Appointment> appointments = appointmentRepository.findByDoctor_NameIgnoreCaseAndPatient_Id(doctorName, patientId);
+            LocalDateTime now = LocalDateTime.now();
+            List<Appointment> filteredAppointments = appointments.stream()
+                    .filter(appointment -> condition.equalsIgnoreCase(PAST_CONDITION)
+                            ? appointment.getAppointmentTime().isBefore(now)
+                            : appointment.getAppointmentTime().isAfter(now))
+                    .toList();
             response.put("status", "ok");
             response.put("data", filteredAppointments.stream().map(AppointmentDTO::to).toList());
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -154,11 +163,16 @@ public class PatientService {
     public ResponseEntity<Map<String, Object>> getPatientDetails(String token) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // retreve mail from token;
-            String patientEmail = "";//tokenService.decode(token)
+            String patientEmail = tokenService.extractIdentifier(token);
             Patient patient = patientRepository.findByEmail(patientEmail);
+            if (patient == null) {
+                response.put("status", "error");
+                response.put("message", "No patient found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
             response.put("status", "ok");
             response.put("data", patient);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             log.error(e.getMessage());
             response.put("status", "error");
