@@ -6,6 +6,13 @@ const dashboardByRole = { patient: '/patient-dashboard', doctor: '/doctor-dashbo
 const current = session();
 if (current.token && dashboardByRole[current.role]) {
     document.querySelector('[data-login-link]')?.setAttribute('href', dashboardByRole[current.role]);
+    document.querySelectorAll('[data-auth-guest]').forEach(element => { element.hidden = true; });
+    const authenticatedCard = document.querySelector('[data-auth-session]');
+    const dashboardLink = document.querySelector('[data-dashboard-link]');
+    const authenticatedRole = document.querySelector('[data-auth-role]');
+    if (authenticatedCard) authenticatedCard.hidden = false;
+    if (dashboardLink) dashboardLink.href = dashboardByRole[current.role];
+    if (authenticatedRole) authenticatedRole.textContent = current.role;
 }
 
 async function loadDoctors() {
@@ -22,10 +29,14 @@ async function loadDoctors() {
 
 function doctorCard(doctor) {
     const rating = Number(doctor.rating || 0);
+    const bookingHref = current.token && current.role === 'patient' ? '/patient-dashboard' : '#access';
+    const phone = doctor.phone
+        ? `<span class="doctor-phone"><span aria-hidden="true">☎</span><span>Phone: ${escapeHtml(doctor.phone)}</span></span>`
+        : '';
     return `<article class="doctor-card">
         <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(rating)}${'☆'.repeat(Math.max(0, 5-rating))}</span></div>
         <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
-        <div class="doctor-meta"><span>${escapeHtml(doctor.email)}</span><a href="#access">Book →</a></div>
+        <div class="doctor-meta"><span class="doctor-contact"><span>${escapeHtml(doctor.email)}</span>${phone}</span><a href="${bookingHref}">Book →</a></div>
     </article>`;
 }
 function doctorAvatar(doctor) {

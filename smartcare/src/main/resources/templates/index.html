@@ -60,19 +60,24 @@
                 <div class="privacy-note"><span>✓</span>Your password is protected with BCrypt and access uses signed tokens.</div>
             </div>
             <div class="auth-card">
-                <div class="role-tabs" role="tablist" aria-label="Select account role">
+                <div class="role-tabs" role="tablist" aria-label="Select account role" data-auth-guest>
                     <button class="role-tab active" data-role-tab="patient" type="button">Patient</button>
                     <button class="role-tab" data-role-tab="doctor" type="button">Doctor</button>
                     <button class="role-tab" data-role-tab="admin" type="button">Admin</button>
                 </div>
-                <form class="auth-form" data-login-form novalidate>
+                <form class="auth-form" data-login-form data-auth-guest novalidate>
                     <input type="hidden" name="role" value="patient">
                     <label><span data-identifier-label>Email address</span><input name="identifier" type="email" autocomplete="username" required></label>
                     <label>Password<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
                     <p class="form-error" data-form-error hidden></p>
                     <button class="button button-primary button-block" type="submit">Sign in securely</button>
                 </form>
-                <button class="text-button" type="button" data-signup-toggle>New patient? Create an account</button>
+                <button class="text-button" type="button" data-signup-toggle data-auth-guest>New patient? Create an account</button>
+                <div class="authenticated-card" data-auth-session hidden>
+                    <span class="authenticated-mark" aria-hidden="true">✓</span>
+                    <p>You are signed in as <strong data-auth-role></strong>.</p>
+                    <a class="button button-primary button-block" data-dashboard-link>Continue to your dashboard</a>
+                </div>
             </div>
         </section>
 

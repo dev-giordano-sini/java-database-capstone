@@ -9,10 +9,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 const empty = message => `<div class="empty-state">${escapeHtml(message)}</div>`;
 
 function doctorCard(doctor, actions = '') {
+    const phone = doctor.phone
+        ? `<span class="doctor-phone"><span aria-hidden="true">☎</span><span>Phone: ${escapeHtml(doctor.phone)}</span></span>`
+        : '<span class="doctor-phone"><span aria-hidden="true">☎</span><span>Phone unavailable</span></span>';
     return `<article class="doctor-card" data-search-value="${escapeHtml(`${doctor.name} ${doctor.specialty}`.toLowerCase())}">
         <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(Number(doctor.rating || 0))}</span></div>
         <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
-        <div class="doctor-meta"><span>${escapeHtml(doctor.email)}</span><span>${escapeHtml(doctor.phone || '')}</span></div>
+        <div class="doctor-meta"><span class="doctor-contact"><span>${escapeHtml(doctor.email)}</span>${phone}</span></div>
         ${actions}
     </article>`;
 }
