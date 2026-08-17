@@ -22,7 +22,9 @@ public class AppointmentDTO {
     private LocalDate appointmentDate;
     private LocalTime appointmentTimeOnly;
     private LocalDateTime endTime;
-    
+
+    public AppointmentDTO() {
+    }
 
     public AppointmentDTO(Long id, Long doctorId, String doctorName, Long patientId, String patientName, String patientEmail, String patientPhone, String patientAddress, LocalDateTime appointmentTime, int status) {
         this.id = id;

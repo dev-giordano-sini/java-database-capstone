@@ -2,9 +2,8 @@ package com.smartcare.backend.service;
 
 import com.smartcare.backend.model.Prescription;
 import com.smartcare.backend.repository.PrescriptionRepository;
-import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.http.HttpStatus;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 @Service
 public class PrescriptionService {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final PrescriptionRepository prescriptionRepository;
 
@@ -26,7 +25,6 @@ public class PrescriptionService {
         this.prescriptionRepository = prescriptionRepository;
     }
 
-    @Transactional
     public ResponseEntity<Map<String, String>> savePrescription(Prescription prescription) {
         Map<String, String> response = new HashMap<>();
 
@@ -44,7 +42,6 @@ public class PrescriptionService {
         }
     }
 
-    @Transactional
     public ResponseEntity<Map<String, Object>> getPrescription(Long appointmentId) {
         Map<String, Object> response = new HashMap<>();
 

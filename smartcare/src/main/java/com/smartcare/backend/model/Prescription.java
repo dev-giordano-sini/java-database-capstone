@@ -1,9 +1,11 @@
 package com.smartcare.backend.model;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "prescriptions")
 public class Prescription {
@@ -11,14 +13,19 @@ public class Prescription {
     private String id;
     @NotNull
     @Size(min = 3, max = 100)
+    @Field("patientName")
     private String patientName;
     @NotNull
+    @Indexed
+    @Field("appointmentId")
     private Long appointmentId;
     @NotNull
     @Size(min = 3, max = 100)
     private String medication;
     @Size(max = 200)
+    @Field("doctorNotes")
     private String doctorNotes;
+    @Field("pharmacyName")
     private String pharmacyName;
 
     public String getId() {

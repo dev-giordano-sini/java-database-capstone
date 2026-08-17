@@ -1,14 +1,17 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.AppointmentDTO;
+import com.smartcare.backend.DTO.AppointmentMonthlyStat;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
+import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
+import com.smartcare.backend.repository.PrescriptionRepository;
 import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,29 +19,34 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final AppointmentRepository appointmentRepository;
-    private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
-    private final TokenService  tokenService;
-    private final MyService myService;
+    private final PatientRepository patientRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
-    public AppointmentService(AppointmentRepository appointmentRepository, PatientRepository patientRepository, DoctorRepository doctorRepository, TokenService tokenService, MyService myService) {
+    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
+                              PatientRepository patientRepository, PrescriptionRepository prescriptionRepository) {
         this.appointmentRepository = appointmentRepository;
-        this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
-        this.tokenService = tokenService;
-        this.myService = myService;
+        this.patientRepository = patientRepository;
+        this.prescriptionRepository = prescriptionRepository;
     }
 
     @Transactional
-    public int bookAppointment(Appointment appointment) {
+    public int bookAppointment(Appointment appointment, String patientEmail) {
         try {
+            Patient patient = patientRepository.findByEmail(patientEmail);
+            Doctor doctor = doctorRepository.findById(appointment.getDoctor().getId()).orElse(null);
+            if (patient == null || doctor == null) {
+                return 0;
+            }
+            appointment.setPatient(patient);
+            appointment.setDoctor(doctor);
             appointmentRepository.save(appointment);
             return 1;
         }
@@ -50,73 +58,74 @@ public class AppointmentService {
     }
 
     @Transactional
-    public ResponseEntity<Map<String, String>> updateAppointment(Appointment appointment) {
-        Map<String,String> map = new HashMap<>();
-        map.put("status","success");
-        map.put("message", "");
-
-        Optional<Appointment> optional = appointmentRepository.findById(appointment.getId());
-
-        if(optional.isPresent()) {
-            if(optional.get() == appointment) {
-                appointmentRepository.save(appointment);
-                boolean isValid = validateAppointment(appointment);
-
-                if(isValid) {
-                    map.put("message","appointment updated");
-                }
-                else {
-                    map.put("status","ko");
-                    map.put("message","appointment not saved");
-                }
-            }
-        }
-        else {
-            map.put("status","no appointment with id:"+appointment.getId());
+    public ResponseEntity<Map<String, String>> updateAppointment(Appointment appointment, String patientEmail) {
+        Map<String, String> response = new HashMap<>();
+        Appointment savedAppointment = appointment.getId() == null
+                ? null
+                : appointmentRepository.findById(appointment.getId()).orElse(null);
+        if (savedAppointment == null) {
+            response.put("status", "ko");
+            response.put("message", "no appointment with id: " + appointment.getId());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
 
-        return new ResponseEntity<>(map, HttpStatus.OK);
+        if (!savedAppointment.getPatient().getEmail().equalsIgnoreCase(patientEmail)) {
+            response.put("status", "ko");
+            response.put("message", "appointment does not belong to authenticated patient");
+            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+        }
+
+        appointment.setPatient(savedAppointment.getPatient());
+        appointmentRepository.save(appointment);
+        response.put("status", "success");
+        response.put("message", "appointment updated");
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @Transactional
-    public ResponseEntity<Map<String, String>> cancelAppointment(long id, String token) {
-        // TODO: validate token..
+    public ResponseEntity<Map<String, String>> cancelAppointment(long id, String patientEmail) {
         Map<String,String> map = new HashMap<>();
         map.put("status","success");
 
         Optional<Appointment> optional = appointmentRepository.findById(id);
 
-        if(optional.isPresent()) {
+        if(optional.isPresent() && optional.get().getPatient().getEmail().equalsIgnoreCase(patientEmail)) {
             map.put("message","appointment cancelled");
+            prescriptionRepository.deleteAllByAppointmentId(id);
             appointmentRepository.deleteById(id);
         }
-        else {
+        else if (optional.isEmpty()) {
             map.put("status","ko");
             map.put("message","no appointment found");
+            return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
+        }
+        else {
+            map.put("status", "ko");
+            map.put("message", "appointment does not belong to authenticated patient");
+            return new ResponseEntity<>(map, HttpStatus.FORBIDDEN);
         }
 
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
     @Transactional
-    public Map<String, Object> getAppointment(String patientName, LocalDate date, String token) {
-        // TODO: validate token..
+    public Map<String, Object> getAppointment(String patientName, LocalDate date) {
         Map<String,Object> doctorToAppointment = new HashMap<>();
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atStartOfDay().plusDays(1);
 
         List<Doctor> doctors = doctorRepository.findAll();
         doctors.forEach(doctor -> {
-            Optional<List<Appointment>> optionalAppointments;
-            if(patientName != null && !patientName.isEmpty()) {
-                optionalAppointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
+            List<Appointment> appointments;
+            if(patientName == null || patientName.isBlank()) {
+                appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
             }
             else {
-                optionalAppointments = appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctor.getId(), patientName, start, end);
+                appointments = appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctor.getId(), patientName, start, end);
             }
 
-            if(optionalAppointments.isPresent() && !optionalAppointments.get().isEmpty()) {
-                List<AppointmentDTO> appointmentDTOS = optionalAppointments.get().stream().map(AppointmentDTO::to).toList();
+            if(!appointments.isEmpty()) {
+                List<AppointmentDTO> appointmentDTOS = appointments.stream().map(AppointmentDTO::to).toList();
                 doctorToAppointment.put(doctor.getName(),appointmentDTOS);
             }
         });
@@ -124,22 +133,9 @@ public class AppointmentService {
         return doctorToAppointment;
     }
 
-    public boolean validateAppointment(Appointment oldAppointment) {
-        Appointment newAppointment = appointmentRepository.findById(oldAppointment.getId()).orElse(null);
-        if(newAppointment  == null) {
-            return false;
-        }
-        boolean isValid = false;
-
-        if(!oldAppointment.getDoctor().equals(newAppointment.getDoctor()))
-            isValid = true;
-        if(!oldAppointment.getAppointmentTime().equals(newAppointment.getAppointmentTime())
-                || !oldAppointment.getEndTime().equals(newAppointment.getEndTime()))
-            isValid = true;
-        if(!oldAppointment.getNotes().equals(newAppointment.getNotes()))
-            isValid = true;
-
-        return true;
+    @Transactional
+    public List<AppointmentMonthlyStat> getMonthlyStatistics() {
+        return appointmentRepository.countAppointmentsByMonth();
     }
 
 }

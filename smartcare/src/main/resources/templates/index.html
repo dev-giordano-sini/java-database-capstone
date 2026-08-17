@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="SmartCare appointment management portal">
+    <title>SmartCare · Care starts with clarity</title>
+    <link rel="icon" th:href="@{/assets/images/logo/logo.png}">
+    <link rel="stylesheet" th:href="@{/assets/css/smartcare.css}">
+    <script type="module" th:src="@{/js/smartcare/auth.js}" defer></script>
+</head>
+<body data-page="home">
+<div class="page-shell">
+    <header th:replace="~{fragments/layout :: header('home')}"></header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">Healthcare, thoughtfully organized</span>
+                <h1>Care starts with <em>clarity.</em></h1>
+                <p>Find the right doctor, choose a time that works, and keep every appointment in one calm, secure place.</p>
+                <div class="hero-actions">
+                    <a class="button button-primary button-large" href="#doctors">Explore doctors</a>
+                    <a class="button button-secondary button-large" href="#access">Sign in</a>
+                </div>
+                <dl class="trust-list">
+                    <div><dt>01</dt><dd>Browse specialists</dd></div>
+                    <div><dt>02</dt><dd>Book in minutes</dd></div>
+                    <div><dt>03</dt><dd>Stay prepared</dd></div>
+                </dl>
+            </div>
+            <div class="hero-visual" aria-label="SmartCare appointment preview">
+                <div class="visual-orbit orbit-one"></div>
+                <div class="visual-orbit orbit-two"></div>
+                <div class="appointment-preview">
+                    <span class="status-dot"></span>
+                    <span class="preview-label">Next appointment</span>
+                    <strong>Tuesday · 09:00</strong>
+                    <span>One hour consultation</span>
+                </div>
+                <div class="care-monogram">SC</div>
+            </div>
+        </section>
+
+        <section class="section" id="doctors">
+            <div class="section-heading">
+                <div><span class="eyebrow">Our medical team</span><h2>Choose with confidence.</h2></div>
+                <p>Explore doctor profiles before creating an account, just as the patient journey requires.</p>
+            </div>
+            <div class="card-grid" data-public-doctors>
+                <article class="skeleton-card"></article><article class="skeleton-card"></article><article class="skeleton-card"></article>
+            </div>
+        </section>
+
+        <section class="access-section" id="access">
+            <div class="access-intro">
+                <span class="eyebrow">One portal, three perspectives</span>
+                <h2>Welcome back.</h2>
+                <p>Select your role and continue to your tailored workspace.</p>
+                <div class="privacy-note"><span>✓</span>Your password is protected with BCrypt and access uses signed tokens.</div>
+            </div>
+            <div class="auth-card">
+                <div class="role-tabs" role="tablist" aria-label="Select account role">
+                    <button class="role-tab active" data-role-tab="patient" type="button">Patient</button>
+                    <button class="role-tab" data-role-tab="doctor" type="button">Doctor</button>
+                    <button class="role-tab" data-role-tab="admin" type="button">Admin</button>
+                </div>
+                <form class="auth-form" data-login-form novalidate>
+                    <input type="hidden" name="role" value="patient">
+                    <label><span data-identifier-label>Email address</span><input name="identifier" type="email" autocomplete="username" required></label>
+                    <label>Password<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+                    <p class="form-error" data-form-error hidden></p>
+                    <button class="button button-primary button-block" type="submit">Sign in securely</button>
+                </form>
+                <button class="text-button" type="button" data-signup-toggle>New patient? Create an account</button>
+            </div>
+        </section>
+
+        <section class="section about-strip" id="about">
+            <span class="eyebrow">Designed around real workflows</span>
+            <h2>Less administration. More attention.</h2>
+            <p>Patients manage bookings, doctors prepare for the day, and administrators keep the clinical team current.</p>
+        </section>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+
+<dialog class="signup-dialog" data-signup-dialog>
+    <button class="dialog-close" type="button" data-dialog-close aria-label="Close">×</button>
+    <span class="eyebrow">Patient registration</span>
+    <h2>Create your SmartCare account</h2>
+    <form class="signup-form" data-signup-form>
+        <div class="form-grid">
+            <label>Full name<input name="name" required minlength="3"></label>
+            <label>Email<input name="email" type="email" required></label>
+            <label>Password<input name="password" type="password" required minlength="6"></label>
+            <label>Phone<input name="phone" inputmode="numeric" pattern="[0-9]{10}" required></label>
+            <label class="full-field">Address<input name="address" required></label>
+            <label>Date of birth<input name="birthDate" type="datetime-local" required></label>
+        </div>
+        <p class="form-error" data-signup-error hidden></p>
+        <button class="button button-primary button-block" type="submit">Create account</button>
+    </form>
+</dialog>
+<div th:replace="~{fragments/layout :: toasts}"></div>
+</body>
+</html>
