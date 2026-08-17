@@ -1,6 +1,7 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.Login;
+import com.smartcare.backend.DTO.DoctorProfileUpdate;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -134,6 +135,22 @@ public class DoctorService {
     public List<Doctor> getDoctors() {
         List<Doctor> doctors = doctorRepository.findAll();
         return doctors == null || doctors.isEmpty() ? new ArrayList<>() : doctors;
+    }
+
+    public Doctor getDoctorByEmail(String email) {
+        return doctorRepository.findByEmail(email);
+    }
+
+    @Transactional
+    public Doctor updateOwnProfile(String email, DoctorProfileUpdate update) {
+        Doctor doctor = doctorRepository.findByEmail(email);
+        if (doctor == null) {
+            return null;
+        }
+        doctor.setSpecialty(update.specialty());
+        doctor.setPhone(update.phone());
+        doctor.setAvailableTimes(update.availableTimes().stream().distinct().sorted().toList());
+        return doctorRepository.save(doctor);
     }
 
     /**

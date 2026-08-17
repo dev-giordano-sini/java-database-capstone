@@ -1,9 +1,11 @@
 package com.smartcare.backend.controller;
 
 import com.smartcare.backend.DTO.Login;
+import com.smartcare.backend.DTO.DoctorProfileUpdate;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.service.DoctorService;
 import com.smartcare.backend.service.MyService;
+import com.smartcare.backend.service.TokenService;
 import jakarta.validation.Valid;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
@@ -23,10 +25,12 @@ public class DoctorController {
 
     private final MyService myService;
     private final DoctorService doctorService;
+    private final TokenService tokenService;
 
-    public DoctorController(MyService myService, DoctorService doctorService) {
+    public DoctorController(MyService myService, DoctorService doctorService, TokenService tokenService) {
         this.myService = myService;
         this.doctorService = doctorService;
+        this.tokenService = tokenService;
     }
 
     @GetMapping("/{doctorId}/availability")
@@ -96,6 +100,28 @@ public class DoctorController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginDoctor(@Valid @RequestBody Login login) {
         return doctorService.validateDoctor(login);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getOwnProfile(@RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "doctor");
+        if (authentication.getStatusCode() != HttpStatus.OK) {
+            return authentication;
+        }
+        Doctor doctor = doctorService.getDoctorByEmail(tokenService.extractIdentifier(authorization));
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateOwnProfile(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody DoctorProfileUpdate update) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "doctor");
+        if (authentication.getStatusCode() != HttpStatus.OK) {
+            return authentication;
+        }
+        Doctor doctor = doctorService.updateOwnProfile(tokenService.extractIdentifier(authorization), update);
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
     }
 
     @PutMapping

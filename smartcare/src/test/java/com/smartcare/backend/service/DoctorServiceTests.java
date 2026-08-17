@@ -1,5 +1,6 @@
 package com.smartcare.backend.service;
 
+import com.smartcare.backend.DTO.DoctorProfileUpdate;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 class DoctorServiceTests {
     @Test
@@ -58,5 +60,25 @@ class DoctorServiceTests {
 
         assertEquals(List.of(doctor), result.get("09:00"));
         assertNull(result.get("14:00"));
+    }
+
+    @Test
+    void doctorCanUpdateAndDeduplicateOwnAvailability() {
+        DoctorRepository doctorRepository = mock(DoctorRepository.class);
+        Doctor doctor = new Doctor();
+        when(doctorRepository.findByEmail("doctor@example.com")).thenReturn(doctor);
+        when(doctorRepository.save(doctor)).thenReturn(doctor);
+        DoctorService service = new DoctorService(
+                doctorRepository,
+                mock(AppointmentRepository.class),
+                mock(TokenService.class),
+                mock(PasswordEncoder.class));
+
+        Doctor updated = service.updateOwnProfile("doctor@example.com",
+                new DoctorProfileUpdate("Cardiology", "1234567890", List.of("14:00", "09:00", "09:00")));
+
+        assertEquals("Cardiology", updated.getSpecialty());
+        assertEquals(List.of("09:00", "14:00"), updated.getAvailableTimes());
+        verify(doctorRepository).save(doctor);
     }
 }

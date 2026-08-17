@@ -2,7 +2,8 @@
 
 SmartCare is a Java/Spring Boot application for managing patients, doctors,
 appointments, and prescriptions. It demonstrates a layered backend built with
-Spring MVC, Spring Data JPA, PostgreSQL, BCrypt password hashing, and signed JWTs.
+Spring MVC, Thymeleaf, Spring Data JPA, PostgreSQL, BCrypt password hashing, and
+signed JWTs.
 
 > This is an educational portfolio project, not production medical software.
 
@@ -22,6 +23,21 @@ docker compose up --build
 
 The application is then available at <http://localhost:8080> and PostgreSQL is
 kept inside a named Docker volume.
+
+## Web experience
+
+The Thymeleaf interface implements the role journeys described in the project
+stories:
+
+- visitors can explore the doctor directory and patients can register;
+- patients can sign in, inspect their profile and appointments, book available
+  one-hour slots, and cancel their own bookings;
+- doctors can inspect a dated schedule and patient contact details;
+- administrators can manage the doctor directory;
+- every dashboard clears the browser session on logout.
+
+The interface is responsive and progressively reports loading, empty, success,
+and error states. Protected API calls send the JWT in the `Authorization` header.
 
 ## Run locally
 

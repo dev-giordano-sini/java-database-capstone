@@ -1,41 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
-<link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}">
-<link rel="stylesheet" th:href="@{/assets/css/style.css}">
-<script th:src="@{/js/render.js}" defer></script>
-<script th:src="@{/js/components/header.js}" defer></script>
-<script th:src="@{/js/components/footer.js}" defer></script>
-<script th:src="@{/js/components/patientRows.js}" defer></script>
-
-<body>
-    <div class="container">
-        <div class="wrapper">
-            <div id="header">
-                <button class="btn_add" onclick="addDoctor">
-                    Add doctor
-                </button>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Doctor workspace · SmartCare</title>
+    <link rel="stylesheet" th:href="@{/assets/css/smartcare.css}">
+    <script type="module" th:src="@{/js/smartcare/dashboard.js}" defer></script>
+</head>
+<body data-page="doctor">
+<div class="page-shell dashboard-shell">
+    <header th:replace="~{fragments/layout :: header('doctor')}"></header>
+    <main class="dashboard">
+        <aside class="dashboard-sidebar">
+            <span class="eyebrow">Doctor workspace</span><h1>Your day,<br>at a glance.</h1>
+            <p>Review the schedule and open a patient record before the consultation.</p>
+            <div class="sidebar-note"><span class="status-dot"></span><span>Patient contact details are shown only for scheduled care.</span></div>
+            <button class="button button-secondary button-block" type="button" data-open-profile>Manage availability</button>
+        </aside>
+        <section class="dashboard-content">
+            <div class="dashboard-toolbar">
+                <div><span class="eyebrow">Schedule</span><h2>Appointments</h2></div>
+                <div class="toolbar-fields">
+                    <label class="search-field"><span>Patient</span><input data-patient-filter placeholder="All patients"></label>
+                    <label class="search-field"><span>Date</span><input type="date" data-appointment-date></label>
+                    <button class="button button-secondary" data-load-schedule>Refresh</button>
+                </div>
             </div>
-            <main class="class-content">
-                <input type="text" id="searchBar" />
-                <button class="btn_search">
-                    Today's Appointments
-                </button>
-                <input type="date" id="datePatientInput" />
-                <table id="patientTable">
-                    <tr>
-                        <td>Patient ID</td>
-                        <td>Name</td>
-                        <td>Phone</td>
-                        <td>Email</td>
-                        <td>Prescription</td>
-                    </tr>
-                </table>
-                <div id="content"></div>
-            </main>
-        </div>
-    </div>
-    <script type="module" src="../js/services/patientServices.js" defer></script>
-    <script type="module" src="../js/components/doctorDashboard.js" defer></script>
-</body>
-
-</html>
+            <div class="schedule-list" data-doctor-schedule><article class="skeleton-row"></article></div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+<dialog class="signup-dialog" data-profile-dialog>
+    <button class="dialog-close" data-dialog-close type="button">×</button>
+    <span class="eyebrow">Doctor profile</span><h2>Details & availability</h2>
+    <form data-profile-form>
+        <label>Specialty<input name="specialty" required minlength="3"></label>
+        <label>Phone<input name="phone" required pattern="[0-9]{10}"></label>
+        <label>Available slots <small>Remove a slot to mark it unavailable</small><input name="availableTimes" required placeholder="09:00, 10:00, 14:00"></label>
+        <p class="form-error" data-profile-error hidden></p>
+        <button class="button button-primary button-block">Save profile</button>
+    </form>
+</dialog>
+<div th:replace="~{fragments/layout :: toasts}"></div>
+</body></html>
