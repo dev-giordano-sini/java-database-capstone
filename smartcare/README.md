@@ -104,6 +104,23 @@ mvn clean verify
 docker compose config
 ```
 
+## Startup troubleshooting
+
+If Hibernate reports `Unable to determine Dialect without JDBC metadata`, first
+verify that PostgreSQL is running and reachable with the configured `DB_URL`:
+
+```bash
+docker compose ps
+docker compose logs database
+docker compose exec database pg_isready -U smartcare -d smartcare
+```
+
+The application explicitly configures the PostgreSQL JDBC driver and dialect,
+but it still requires a reachable database and the schema created by
+`database/schema.sql`. When switching from an older schema during local
+development, recreate the disposable volumes with `docker compose down -v`
+before running `docker compose up --build` again. This deletes local data.
+
 Tests use an in-memory H2 database in PostgreSQL compatibility mode, so they do
 not require a running PostgreSQL instance.
 

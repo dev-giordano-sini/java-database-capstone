@@ -38,6 +38,7 @@ services:
       DB_URL: jdbc:postgresql://database:5432/smartcare
       DB_USERNAME: smartcare
       DB_PASSWORD: smartcare
+      JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
       MONGODB_URI: mongodb://document-database:27017/smartcare
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a Base64-encoded 256-bit key}
       ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME}
