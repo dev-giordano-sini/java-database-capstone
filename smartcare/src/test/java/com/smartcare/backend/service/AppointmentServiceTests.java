@@ -84,4 +84,20 @@ class AppointmentServiceTests {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         verify(appointmentRepository, never()).save(update);
     }
+
+    @Test
+    void monthlyStatisticsMapRepositoryAggregation() {
+        when(appointmentRepository.countAppointmentsByMonth()).thenReturn(List.of(
+                new Object[]{2026, 7, 3L},
+                new Object[]{2026, 8, 5L}
+        ));
+
+        var statistics = appointmentService.getMonthlyStatistics();
+
+        assertEquals(2, statistics.size());
+        assertEquals(2026, statistics.get(0).year());
+        assertEquals(7, statistics.get(0).month());
+        assertEquals(3L, statistics.get(0).appointments());
+        assertEquals(5L, statistics.get(1).appointments());
+    }
 }

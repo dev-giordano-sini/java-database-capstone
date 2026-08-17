@@ -1,6 +1,7 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.AppointmentDTO;
+import com.smartcare.backend.DTO.AppointmentMonthlyStat;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.model.Patient;
@@ -126,6 +127,16 @@ public class AppointmentService {
         });
 
         return doctorToAppointment;
+    }
+
+    @Transactional
+    public List<AppointmentMonthlyStat> getMonthlyStatistics() {
+        return appointmentRepository.countAppointmentsByMonth().stream()
+                .map(row -> new AppointmentMonthlyStat(
+                        ((Number) row[0]).intValue(),
+                        ((Number) row[1]).intValue(),
+                        ((Number) row[2]).longValue()))
+                .toList();
     }
 
 }

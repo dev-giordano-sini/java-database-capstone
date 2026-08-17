@@ -100,13 +100,14 @@ bookingForm?.addEventListener('submit', async event => {
 async function loadAdminDashboard() {
     const container = document.querySelector('[data-admin-doctors]');
     try {
-        const result = await request('/doctor');
+        const [result, statistics] = await Promise.all([request('/doctor'), request('/admin/statistics/appointments')]);
         const doctors = result.data || [];
         container.innerHTML = doctors.length ? doctors.map(doctor => doctorCard(doctor,
             `<div class="doctor-actions"><button class="button button-danger" data-delete-doctor="${doctor.id}">Remove</button></div>`)).join('') : empty('No doctors in the directory.');
         document.querySelector('[data-doctor-count]').textContent = doctors.length;
         document.querySelector('[data-specialty-count]').textContent = new Set(doctors.map(item => item.specialty)).size;
         wireSearch(document.querySelector('[data-doctor-search]'), container);
+        renderStatistics(statistics);
         container.onclick = async event => {
             const button = event.target.closest('[data-delete-doctor]');
             if (!button || !confirm('Remove this doctor and related appointments?')) return;
@@ -114,6 +115,21 @@ async function loadAdminDashboard() {
             catch(error){ toast(error.message); }
         };
     } catch(error) { if(error.status===401)return logoutExpired(); container.innerHTML=empty(error.message); }
+}
+
+function renderStatistics(statistics) {
+    const container = document.querySelector('[data-appointment-statistics]');
+    if (!container) return;
+    if (!statistics.length) {
+        container.innerHTML = empty('Monthly appointment activity will appear after the first booking.');
+        return;
+    }
+    const maximum = Math.max(...statistics.map(item => item.appointments), 1);
+    container.innerHTML = statistics.slice(-12).map(item => {
+        const label = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' })
+            .format(new Date(item.year, item.month - 1, 1));
+        return `<div class="statistics-row"><span>${escapeHtml(label)}</span><div class="statistics-track"><i style="width:${Math.max(4, item.appointments / maximum * 100)}%"></i></div><strong>${item.appointments}</strong></div>`;
+    }).join('');
 }
 
 const doctorDialog = document.querySelector('[data-doctor-dialog]');
@@ -137,7 +153,11 @@ async function loadDoctorSchedule() {
         container.innerHTML=items.length ? items.sort((a,b)=>new Date(a.appointmentTime)-new Date(b.appointmentTime)).map(item=>`<article class="schedule-item">
             <div class="schedule-time">${escapeHtml(item.appointmentTimeOnly || new Date(item.appointmentTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}</div>
             <div><h3>${escapeHtml(item.patientName)}</h3><p>${escapeHtml(item.patientEmail)} · ${escapeHtml(item.patientPhone || 'No phone')}</p><p>${escapeHtml(item.patientAddress || '')}</p></div>
-            <span class="schedule-badge">Scheduled</span></article>`).join('') : empty('No appointments match this date and patient.');
+            <button class="button button-secondary" data-prescription="${item.id}" data-patient-name="${escapeHtml(item.patientName)}">Prescription</button></article>`).join('') : empty('No appointments match this date and patient.');
+        container.onclick = event => {
+            const button = event.target.closest('[data-prescription]');
+            if (button) openPrescription(button.dataset.prescription, button.dataset.patientName);
+        };
     } catch(error){if(error.status===401)return logoutExpired();container.innerHTML=empty(error.message);}
 }
 const profileDialog=document.querySelector('[data-profile-dialog]');
@@ -158,6 +178,23 @@ document.querySelector('[data-profile-form]')?.addEventListener('submit',async e
     data.availableTimes=data.availableTimes.split(',').map(value=>value.trim()).filter(Boolean);
     try{await request('/doctor/me',{method:'PUT',body:JSON.stringify(data)});profileDialog.close();toast('Profile and availability updated.');}
     catch(error){const element=document.querySelector('[data-profile-error]');element.textContent=error.message;element.hidden=false;}
+});
+const prescriptionDialog=document.querySelector('[data-prescription-dialog]');
+const prescriptionForm=document.querySelector('[data-prescription-form]');
+async function openPrescription(appointmentId,patientName){
+    prescriptionForm.reset();prescriptionForm.elements.appointmentId.value=appointmentId;prescriptionForm.elements.patientName.value=patientName;
+    const history=document.querySelector('[data-prescription-history]');history.innerHTML='Loading existing prescriptions…';
+    prescriptionDialog.showModal();
+    try{
+        const result=await request(`/prescription/${appointmentId}`);const items=result.data || [];
+        history.innerHTML=items.length ? items.map(item=>`<article><strong>${escapeHtml(item.medication)}</strong><span>${escapeHtml(item.doctorNotes || 'No notes')}</span></article>`).join('') : '<span>No prescription recorded for this appointment.</span>';
+    }catch(error){history.textContent=error.message;}
+}
+prescriptionDialog?.querySelector('[data-dialog-close]')?.addEventListener('click',()=>prescriptionDialog.close());
+prescriptionForm?.addEventListener('submit',async event=>{
+    event.preventDefault();if(!prescriptionForm.reportValidity())return;const data=Object.fromEntries(new FormData(prescriptionForm));data.appointmentId=Number(data.appointmentId);
+    try{await request('/prescription',{method:'POST',body:JSON.stringify(data)});prescriptionDialog.close();toast('Prescription saved.');}
+    catch(error){const element=document.querySelector('[data-prescription-error]');element.textContent=error.message;element.hidden=false;}
 });
 function logoutExpired(){ localStorage.clear();window.location.replace('/#access'); }
 
