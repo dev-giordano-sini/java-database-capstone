@@ -116,16 +116,16 @@ public class AppointmentService {
 
         List<Doctor> doctors = doctorRepository.findAll();
         doctors.forEach(doctor -> {
-            Optional<List<Appointment>> optionalAppointments;
+            List<Appointment> appointments;
             if(patientName == null || patientName.isBlank()) {
-                optionalAppointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
+                appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctor.getId(), start, end);
             }
             else {
-                optionalAppointments = appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctor.getId(), patientName, start, end);
+                appointments = appointmentRepository.findByDoctorIdAndPatient_NameContainingIgnoreCaseAndAppointmentTimeBetween(doctor.getId(), patientName, start, end);
             }
 
-            if(optionalAppointments.isPresent() && !optionalAppointments.get().isEmpty()) {
-                List<AppointmentDTO> appointmentDTOS = optionalAppointments.get().stream().map(AppointmentDTO::to).toList();
+            if(!appointments.isEmpty()) {
+                List<AppointmentDTO> appointmentDTOS = appointments.stream().map(AppointmentDTO::to).toList();
                 doctorToAppointment.put(doctor.getName(),appointmentDTOS);
             }
         });
@@ -135,12 +135,7 @@ public class AppointmentService {
 
     @Transactional
     public List<AppointmentMonthlyStat> getMonthlyStatistics() {
-        return appointmentRepository.countAppointmentsByMonth().stream()
-                .map(row -> new AppointmentMonthlyStat(
-                        ((Number) row[0]).intValue(),
-                        ((Number) row[1]).intValue(),
-                        ((Number) row[2]).longValue()))
-                .toList();
+        return appointmentRepository.countAppointmentsByMonth();
     }
 
 }

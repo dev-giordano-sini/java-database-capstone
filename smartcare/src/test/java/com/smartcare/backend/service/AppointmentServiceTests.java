@@ -1,6 +1,7 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.model.Appointment;
+import com.smartcare.backend.DTO.AppointmentMonthlyStat;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -63,7 +64,7 @@ class AppointmentServiceTests {
         when(doctorRepository.findAll()).thenReturn(List.of(doctor));
         when(appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(
                 7L, date.atStartOfDay(), date.plusDays(1).atStartOfDay()))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
 
         assertEquals(Map.of(), appointmentService.getAppointment(" ", date));
 
@@ -92,8 +93,8 @@ class AppointmentServiceTests {
     @Test
     void monthlyStatisticsMapRepositoryAggregation() {
         when(appointmentRepository.countAppointmentsByMonth()).thenReturn(List.of(
-                new Object[]{2026, 7, 3L},
-                new Object[]{2026, 8, 5L}
+                new AppointmentMonthlyStat(2026, 7, 3L),
+                new AppointmentMonthlyStat(2026, 8, 5L)
         ));
 
         var statistics = appointmentService.getMonthlyStatistics();

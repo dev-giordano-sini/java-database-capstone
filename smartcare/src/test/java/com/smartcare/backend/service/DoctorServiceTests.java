@@ -33,7 +33,7 @@ class DoctorServiceTests {
         when(doctorRepository.findById(3L)).thenReturn(Optional.of(doctor));
         when(appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(
                 3L, date.atStartOfDay(), date.plusDays(1).atStartOfDay()))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
 
         DoctorService service = new DoctorService(
                 doctorRepository, appointmentRepository, tokenService, passwordEncoder,
@@ -50,7 +50,7 @@ class DoctorServiceTests {
         doctor.setName("Dr Test");
         doctor.setAvailableTimes(List.of("09:00", "14:00"));
         when(doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase("Test", "Cardiology"))
-                .thenReturn(Optional.of(List.of(doctor)));
+                .thenReturn(List.of(doctor));
         DoctorService service = new DoctorService(
                 doctorRepository,
                 appointmentRepository,
@@ -84,5 +84,24 @@ class DoctorServiceTests {
         assertEquals("Cardiology", updated.getSpecialty());
         assertEquals(List.of("09:00", "14:00"), updated.getAvailableTimes());
         verify(doctorRepository).save(doctor);
+    }
+
+    @Test
+    void doctorNameSearchUsesCaseInsensitiveContainsQuery() {
+        DoctorRepository doctorRepository = mock(DoctorRepository.class);
+        Doctor doctor = new Doctor();
+        doctor.setName("Dr Alice Smith");
+        when(doctorRepository.findByNameContainingIgnoreCase("alice")).thenReturn(List.of(doctor));
+        DoctorService service = new DoctorService(
+                doctorRepository,
+                mock(AppointmentRepository.class),
+                mock(TokenService.class),
+                mock(PasswordEncoder.class),
+                mock(PrescriptionRepository.class));
+
+        Map<String, Object> result = service.findDoctorByName("alice");
+
+        assertEquals(doctor, result.get("Dr Alice Smith"));
+        verify(doctorRepository).findByNameContainingIgnoreCase("alice");
     }
 }

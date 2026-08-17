@@ -62,7 +62,7 @@ public class DoctorService {
         List<Appointment> appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctorId,
                 startLocalDateTime,
                 endLocalDateTime
-        ).orElse(new ArrayList<>());
+        );
 
         Set<LocalTime> timeSet = appointments.stream().map(appointment -> appointment.getAppointmentTime().toLocalTime()).collect(Collectors.toSet());
 
@@ -233,7 +233,7 @@ public class DoctorService {
 
     @Transactional
     public Map<String, Object> findDoctorByName(String doctorName) {
-        List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(List.of());
+        List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCase(doctorName);
         Map<String, Object> response = new HashMap<>();
 
         doctors.forEach(doctor -> {
@@ -252,7 +252,7 @@ public class DoctorService {
                 (specialty != null && !specialty.isEmpty()) &&
                 (amOrPm != null && !amOrPm.isEmpty() && (amOrPm.equals("AM") || amOrPm.equals("PM")))
         ) {
-            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty).orElse(new ArrayList<>());
+            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty);
             response = filterDoctorsByTime(doctors, amOrPm);
         }
 
@@ -286,7 +286,7 @@ public class DoctorService {
         if ((doctorName != null && !doctorName.isEmpty()) &&
                 (amOrPm != null && !amOrPm.isEmpty() && (amOrPm.equals("AM") || amOrPm.equals("PM")))
         ) {
-            List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(new ArrayList<>());
+            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCase(doctorName);
             response = filterDoctorsByTime(doctors, amOrPm);
         }
 
@@ -298,7 +298,7 @@ public class DoctorService {
         Map<String, Object> response = new HashMap<>();
         List<Doctor> doctors;
         if ((doctorName != null && !doctorName.isEmpty()) && (specialty != null && !specialty.isEmpty())) {
-            doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty).orElse(new ArrayList<>());
+            doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty);
         } else {
             doctors = null;
         }
@@ -339,10 +339,14 @@ public class DoctorService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public List<Doctor> filterDoctorByTime(List<Doctor> doctors, String amOrPm) {
         Map<String, Object> map = filterDoctorsByTime(doctors, amOrPm);
 
-        return map.values().stream().map(f -> (Doctor) f ).collect(Collectors.toList());
+        return map.values().stream()
+                .flatMap(value -> ((List<Doctor>) value).stream())
+                .distinct()
+                .toList();
     }
 
 }
