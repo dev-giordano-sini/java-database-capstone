@@ -43,6 +43,11 @@ public class Doctor {
     @Column(unique = true, length = 10)
     private String phone;
 
+    @Size(max = 2048)
+    @Pattern(regexp = "^https://.+", message = "profileImageUrl must use HTTPS")
+    @Column(name = "profile_image_url", length = 2048)
+    private String profileImageUrl;
+
     @ElementCollection
     @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
     @Column(name = "time_slot")
@@ -98,6 +103,14 @@ public class Doctor {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public List<String> getAvailableTimes() {

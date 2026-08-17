@@ -158,6 +158,7 @@ public class DoctorService {
         }
         doctor.setSpecialty(update.specialty());
         doctor.setPhone(update.phone());
+        doctor.setProfileImageUrl(update.profileImageUrl());
         doctor.setAvailableTimes(update.availableTimes().stream().distinct().sorted().toList());
         return doctorRepository.save(doctor);
     }

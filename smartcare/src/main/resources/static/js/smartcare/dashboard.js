@@ -10,11 +10,18 @@ const empty = message => `<div class="empty-state">${escapeHtml(message)}</div>`
 
 function doctorCard(doctor, actions = '') {
     return `<article class="doctor-card" data-search-value="${escapeHtml(`${doctor.name} ${doctor.specialty}`.toLowerCase())}">
-        <div class="doctor-card-top"><div class="doctor-avatar">${initials(doctor.name)}</div><span class="rating">${'★'.repeat(Number(doctor.rating || 0))}</span></div>
+        <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(Number(doctor.rating || 0))}</span></div>
         <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
         <div class="doctor-meta"><span>${escapeHtml(doctor.email)}</span><span>${escapeHtml(doctor.phone || '')}</span></div>
         ${actions}
     </article>`;
+}
+
+function doctorAvatar(doctor) {
+    const fallback = escapeHtml(initials(doctor.name));
+    return doctor.profileImageUrl
+        ? `<div class="doctor-avatar"><img src="${escapeHtml(doctor.profileImageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"><span>${fallback}</span></div>`
+        : `<div class="doctor-avatar"><span>${fallback}</span></div>`;
 }
 
 function wireSearch(input, container) {
@@ -138,7 +145,7 @@ doctorDialog?.querySelector('[data-dialog-close]')?.addEventListener('click', ()
 document.querySelector('[data-doctor-form]')?.addEventListener('submit', async event => {
     event.preventDefault(); const form=event.currentTarget;if(!form.reportValidity())return;
     const data=Object.fromEntries(new FormData(form));
-    data.rating=Number(data.rating);data.availableTimes=data.availableTimes.split(',').map(item=>item.trim()).filter(Boolean);
+    data.rating=Number(data.rating);data.profileImageUrl=data.profileImageUrl.trim() || null;data.availableTimes=data.availableTimes.split(',').map(item=>item.trim()).filter(Boolean);
     try{await request('/doctor',{method:'POST',body:JSON.stringify(data)});doctorDialog.close();form.reset();toast('Doctor added.');loadAdminDashboard();}
     catch(error){const element=document.querySelector('[data-doctor-error]');element.textContent=error.message;element.hidden=false;}
 });
@@ -167,6 +174,7 @@ document.querySelector('[data-open-profile]')?.addEventListener('click',async()=
         const form=document.querySelector('[data-profile-form]');
         form.elements.specialty.value=doctor.specialty || '';
         form.elements.phone.value=doctor.phone || '';
+        form.elements.profileImageUrl.value=doctor.profileImageUrl || '';
         form.elements.availableTimes.value=(doctor.availableTimes || []).join(', ');
         profileDialog.showModal();
     }catch(error){toast(error.message);}
@@ -175,6 +183,7 @@ profileDialog?.querySelector('[data-dialog-close]')?.addEventListener('click',()
 document.querySelector('[data-profile-form]')?.addEventListener('submit',async event=>{
     event.preventDefault();const form=event.currentTarget;if(!form.reportValidity())return;
     const data=Object.fromEntries(new FormData(form));
+    data.profileImageUrl=data.profileImageUrl.trim() || null;
     data.availableTimes=data.availableTimes.split(',').map(value=>value.trim()).filter(Boolean);
     try{await request('/doctor/me',{method:'PUT',body:JSON.stringify(data)});profileDialog.close();toast('Profile and availability updated.');}
     catch(error){const element=document.querySelector('[data-profile-error]');element.textContent=error.message;element.hidden=false;}

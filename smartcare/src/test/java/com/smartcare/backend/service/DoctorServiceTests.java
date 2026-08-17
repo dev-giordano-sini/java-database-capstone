@@ -30,6 +30,7 @@ class DoctorServiceTests {
         doctor.setSpecialty("Cardiology");
         doctor.setEmail("alice@example.com");
         doctor.setPassword("must-not-be-exposed");
+        doctor.setProfileImageUrl("https://cdn.example.com/alice.webp");
         doctor.setAvailableTimes(List.of("09:00", "14:00"));
         when(doctorRepository.findAll()).thenReturn(List.of(doctor));
         DoctorService service = new DoctorService(
@@ -43,6 +44,7 @@ class DoctorServiceTests {
 
         assertEquals(1, directory.size());
         assertEquals(7L, directory.getFirst().id());
+        assertEquals("https://cdn.example.com/alice.webp", directory.getFirst().profileImageUrl());
         assertEquals(List.of("09:00", "14:00"), directory.getFirst().availableTimes());
     }
 
@@ -105,9 +107,10 @@ class DoctorServiceTests {
                 mock(PrescriptionRepository.class));
 
         Doctor updated = service.updateOwnProfile("doctor@example.com",
-                new DoctorProfileUpdate("Cardiology", "1234567890", List.of("14:00", "09:00", "09:00")));
+                new DoctorProfileUpdate("Cardiology", "1234567890", "https://cdn.example.com/doctor.webp", List.of("14:00", "09:00", "09:00")));
 
         assertEquals("Cardiology", updated.getSpecialty());
+        assertEquals("https://cdn.example.com/doctor.webp", updated.getProfileImageUrl());
         assertEquals(List.of("09:00", "14:00"), updated.getAvailableTimes());
         verify(doctorRepository).save(doctor);
     }

@@ -17,9 +17,13 @@ CREATE TABLE IF NOT EXISTS doctors (
     email       VARCHAR(254) NOT NULL UNIQUE,
     password    VARCHAR(60) NOT NULL,
     phone       VARCHAR(10) UNIQUE,
+    profile_image_url VARCHAR(2048),
     rating      INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT ck_doctors_rating CHECK (rating BETWEEN 0 AND 5),
-    CONSTRAINT ck_doctors_phone CHECK (phone IS NULL OR phone ~ '^[0-9]{10}$')
+    CONSTRAINT ck_doctors_phone CHECK (phone IS NULL OR phone ~ '^[0-9]{10}$'),
+    CONSTRAINT ck_doctors_profile_image_url CHECK (
+        profile_image_url IS NULL OR profile_image_url ~ '^https://.+'
+    )
 );
 
 CREATE TABLE IF NOT EXISTS patients (

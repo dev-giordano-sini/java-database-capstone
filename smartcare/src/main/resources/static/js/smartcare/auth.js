@@ -23,10 +23,16 @@ async function loadDoctors() {
 function doctorCard(doctor) {
     const rating = Number(doctor.rating || 0);
     return `<article class="doctor-card">
-        <div class="doctor-card-top"><div class="doctor-avatar">${initials(doctor.name)}</div><span class="rating">${'★'.repeat(rating)}${'☆'.repeat(Math.max(0, 5-rating))}</span></div>
+        <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(rating)}${'☆'.repeat(Math.max(0, 5-rating))}</span></div>
         <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
         <div class="doctor-meta"><span>${escapeHtml(doctor.email)}</span><a href="#access">Book →</a></div>
     </article>`;
+}
+function doctorAvatar(doctor) {
+    const fallback = escapeHtml(initials(doctor.name));
+    return doctor.profileImageUrl
+        ? `<div class="doctor-avatar"><img src="${escapeHtml(doctor.profileImageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"><span>${fallback}</span></div>`
+        : `<div class="doctor-avatar"><span>${fallback}</span></div>`;
 }
 function emptyDoctors(){ return '<div class="empty-state">Doctors will appear here as soon as the administrator adds them.</div>'; }
 

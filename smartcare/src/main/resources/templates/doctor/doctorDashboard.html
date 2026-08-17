@@ -36,6 +36,7 @@
     <form data-profile-form>
         <label>Specialty<input name="specialty" required minlength="3"></label>
         <label>Phone<input name="phone" required pattern="[0-9]{10}"></label>
+        <label>Profile photo URL <small>HTTPS URL from object storage or a CDN</small><input name="profileImageUrl" type="url" pattern="https://.*" placeholder="https://cdn.example.com/doctors/profile.webp"></label>
         <label>Available slots <small>Remove a slot to mark it unavailable</small><input name="availableTimes" required placeholder="09:00, 10:00, 14:00"></label>
         <p class="form-error" data-profile-error hidden></p>
         <button class="button button-primary button-block">Save profile</button>

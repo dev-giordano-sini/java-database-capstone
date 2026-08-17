@@ -45,6 +45,7 @@
             <label>Temporary password<input name="password" type="password" minlength="6" required></label>
             <label>Phone<input name="phone" pattern="[0-9]{10}" required></label>
             <label>Rating<input name="rating" type="number" min="0" max="5" value="0" required></label>
+            <label class="full-field">Profile photo URL <small>HTTPS URL from object storage or a CDN</small><input name="profileImageUrl" type="url" pattern="https://.*" placeholder="https://cdn.example.com/doctors/profile.webp"></label>
             <label class="full-field">Available times <small>Comma separated, e.g. 09:00, 10:00</small><input name="availableTimes" value="09:00, 10:00, 14:00" required></label>
         </div>
         <p class="form-error" data-doctor-error hidden></p>

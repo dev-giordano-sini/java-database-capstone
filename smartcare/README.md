@@ -50,6 +50,17 @@ psql -U smartcare -d smartcare -f database/schema.sql
 Hibernate uses `ddl-auto=validate`; the SQL schema is authoritative and the
 application fails fast when entity mappings drift from it.
 
+Doctor photos are stored as HTTPS object-storage/CDN URLs in PostgreSQL rather
+than as binary database values. For an existing local database, apply the
+additive migration before restarting the application:
+
+```bash
+psql -U smartcare -d smartcare -f database/migrations/V002__doctor_profile_image.sql
+```
+
+The UI lazy-loads the image and falls back to the doctor's initials when the URL
+is absent or the remote object is unavailable.
+
 ### Load demo data
 
 After creating the PostgreSQL schema, load the deterministic portfolio fixtures

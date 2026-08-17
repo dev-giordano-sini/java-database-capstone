@@ -9,6 +9,8 @@ import java.util.List;
 public record DoctorProfileUpdate(
         @Size(min = 3, max = 50) String specialty,
         @Pattern(regexp = "\\d{10}") String phone,
+        @Size(max = 2048)
+        @Pattern(regexp = "^https://.+", message = "profileImageUrl must use HTTPS") String profileImageUrl,
         @NotEmpty List<@Pattern(regexp = "(?:[01]\\d|2[0-3]):[0-5]\\d") String> availableTimes
 ) {
 }

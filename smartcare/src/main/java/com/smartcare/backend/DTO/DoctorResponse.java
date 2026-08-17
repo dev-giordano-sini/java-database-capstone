@@ -10,6 +10,7 @@ public record DoctorResponse(
         String specialty,
         String email,
         String phone,
+        String profileImageUrl,
         List<String> availableTimes,
         int rating
 ) {
@@ -24,6 +25,7 @@ public record DoctorResponse(
                 doctor.getSpecialty(),
                 doctor.getEmail(),
                 doctor.getPhone(),
+                doctor.getProfileImageUrl(),
                 slots,
                 doctor.getRating()
         );

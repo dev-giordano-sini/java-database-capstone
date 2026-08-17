@@ -19,7 +19,7 @@ available, so this relationship is enforced by the service layer.
 | Table | Purpose | Important constraints |
 |---|---|---|
 | `admins` | Administrative accounts | unique username, BCrypt password |
-| `doctors` | Doctor directory and profile | unique email/phone, rating 0–5 |
+| `doctors` | Doctor directory and profile | unique email/phone, rating 0–5, HTTPS profile image URL |
 | `patients` | Patient identity and profile | unique email/phone, past birthdate |
 | `doctor_available_times` | Bookable `HH:mm` slots | composite PK, FK to doctor |
 | `appointments` | One-hour consultations | unique doctor/time, patient and doctor FKs |

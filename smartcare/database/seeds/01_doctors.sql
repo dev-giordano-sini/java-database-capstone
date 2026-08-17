@@ -3,16 +3,17 @@
 
 BEGIN;
 
-INSERT INTO doctors (name, specialty, email, password, phone, rating)
+INSERT INTO doctors (name, specialty, email, password, phone, profile_image_url, rating)
 VALUES
-    ('Giulia Bianchi', 'Cardiology', 'giulia.bianchi@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000001', 5),
-    ('Marco Romano', 'Dermatology', 'marco.romano@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000002', 4),
-    ('Elena Conti', 'Pediatrics', 'elena.conti@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000003', 5)
+    ('Giulia Bianchi', 'Cardiology', 'giulia.bianchi@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000001', NULL, 5),
+    ('Marco Romano', 'Dermatology', 'marco.romano@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000002', NULL, 4),
+    ('Elena Conti', 'Pediatrics', 'elena.conti@smartcare.demo', '$2a$10$f7qkYdyY3mt8qMp8fIYDlOUPINCLnfMVTZ8FB4dD.4icde3rBaTjq', '3200000003', NULL, 5)
 ON CONFLICT (email) DO UPDATE SET
     name = EXCLUDED.name,
     specialty = EXCLUDED.specialty,
     password = EXCLUDED.password,
     phone = EXCLUDED.phone,
+    profile_image_url = COALESCE(EXCLUDED.profile_image_url, doctors.profile_image_url),
     rating = EXCLUDED.rating;
 
 INSERT INTO doctor_available_times (doctor_id, time_slot)
