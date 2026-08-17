@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @Entity
+@Table(name = "doctors")
 public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,22 +20,27 @@ public class Doctor {
 
     @NotNull
     @Size(min = 3, max = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @NotNull
     @Size(min = 3, max = 50)
+    @Column(nullable = false, length = 50)
     private String specialty;
 
     @Email
     @NotNull
+    @Column(nullable = false, unique = true, length = 254)
     private String email;
 
     @Size(min = 6)
     @NotNull
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(nullable = false, length = 60)
     private String password;
 
     @Pattern(regexp = "\\d{10}")
+    @Column(unique = true, length = 10)
     private String phone;
 
     @ElementCollection

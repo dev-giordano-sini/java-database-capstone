@@ -24,6 +24,31 @@ docker compose up --build
 The application is then available at <http://localhost:8080> and PostgreSQL is
 kept inside a named Docker volume.
 
+## PostgreSQL database
+
+PostgreSQL is the only runtime database; prescriptions are stored relationally
+with the other SmartCare data. Docker Compose initializes new volumes from
+`database/schema.sql` automatically.
+
+For a PostgreSQL installation outside Docker, run:
+
+```bash
+psql -U postgres -f database/create_database.sql
+psql -U smartcare -d smartcare -f database/schema.sql
+```
+
+The first command creates the development role/database idempotently using
+`psql`'s `\gexec`. Change the development password in that file for any shared
+environment. To reset a local schema deliberately:
+
+```bash
+psql -U smartcare -d smartcare -f database/drop_schema.sql
+psql -U smartcare -d smartcare -f database/schema.sql
+```
+
+Hibernate uses `ddl-auto=validate`; the SQL schema is authoritative and the
+application fails fast when entity mappings drift from it.
+
 ## Web experience
 
 The Thymeleaf interface implements the role journeys described in the project
@@ -54,8 +79,8 @@ mvn spring-boot:run
 ```
 
 Configuration is supplied through environment variables; secrets are not
-committed to source control. Hibernate uses `update` only as a convenient local
-default. A production deployment should use database migrations.
+committed to source control. A production deployment should evolve the same
+schema through versioned migrations rather than editing an applied script.
 
 ## Verify
 

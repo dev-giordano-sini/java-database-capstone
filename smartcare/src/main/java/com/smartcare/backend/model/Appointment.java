@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
+        name = "appointments",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_appointment_doctor_time",
                 columnNames = {"doctor_id", "appointment_time"}
@@ -28,6 +29,7 @@ public class Appointment {
     @Column(name = "appointment_time", nullable = false)
     private LocalDateTime appointmentTime;
     private int status; // 0 = Scheduled, 1 = Completed
+    @Column(length = 1000)
     private String notes;
     @Transient
     public LocalDateTime getEndTime() {
