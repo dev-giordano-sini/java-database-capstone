@@ -1,37 +1,38 @@
 package com.smartcare.backend.model;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
-@Entity
-@Table(name = "prescriptions")
+@Document(collection = "prescriptions")
 public class Prescription {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     @NotNull
     @Size(min = 3, max = 100)
-    @Column(name = "patient_name", nullable = false, length = 100)
+    @Field("patientName")
     private String patientName;
     @NotNull
-    @Column(name = "appointment_id", nullable = false)
+    @Indexed
+    @Field("appointmentId")
     private Long appointmentId;
     @NotNull
     @Size(min = 3, max = 100)
-    @Column(nullable = false, length = 100)
     private String medication;
     @Size(max = 200)
-    @Column(name = "doctor_notes", length = 200)
+    @Field("doctorNotes")
     private String doctorNotes;
-    @Column(name = "pharmacy_name")
+    @Field("pharmacyName")
     private String pharmacyName;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

@@ -2,7 +2,6 @@ package com.smartcare.backend.service;
 
 import com.smartcare.backend.model.Prescription;
 import com.smartcare.backend.repository.PrescriptionRepository;
-import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +25,6 @@ public class PrescriptionService {
         this.prescriptionRepository = prescriptionRepository;
     }
 
-    @Transactional
     public ResponseEntity<Map<String, String>> savePrescription(Prescription prescription) {
         Map<String, String> response = new HashMap<>();
 
@@ -44,7 +42,6 @@ public class PrescriptionService {
         }
     }
 
-    @Transactional
     public ResponseEntity<Map<String, Object>> getPrescription(Long appointmentId) {
         Map<String, Object> response = new HashMap<>();
 

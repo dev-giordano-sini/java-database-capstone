@@ -29,6 +29,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
      */
     List<Appointment> findByPatientId(Long patientId);
 
+    List<Appointment> findByDoctorId(Long doctorId);
+
     @Query("""
             select year(appointment.appointmentTime), month(appointment.appointmentTime), count(appointment)
             from Appointment appointment

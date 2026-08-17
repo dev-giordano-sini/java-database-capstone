@@ -9,7 +9,7 @@ signed JWTs.
 
 ## Requirements
 
-- Docker with Docker Compose, or Java 21 + Maven 3.9 + PostgreSQL
+- Docker with Docker Compose, or Java 21 + Maven 3.9 + PostgreSQL + MongoDB
 - A Base64-encoded 256-bit JWT key
 
 ## Run with Docker
@@ -24,11 +24,12 @@ docker compose up --build
 The application is then available at <http://localhost:8080> and PostgreSQL is
 kept inside a named Docker volume.
 
-## PostgreSQL database
+## Databases
 
-PostgreSQL is the only runtime database; prescriptions are stored relationally
-with the other SmartCare data. Docker Compose initializes new volumes from
-`database/schema.sql` automatically.
+PostgreSQL stores admins, doctors, patients, availability, and appointments.
+MongoDB is used only for prescription documents. Docker Compose initializes new
+volumes from `database/schema.sql` and
+`database/mongodb/create_prescriptions.js` automatically.
 
 For a PostgreSQL installation outside Docker, run:
 
@@ -48,6 +49,19 @@ psql -U smartcare -d smartcare -f database/schema.sql
 
 Hibernate uses `ddl-auto=validate`; the SQL schema is authoritative and the
 application fails fast when entity mappings drift from it.
+
+For MongoDB outside Docker, create the validated collection and index with:
+
+```bash
+mongosh mongodb://localhost:27017/smartcare database/mongodb/create_prescriptions.js
+```
+
+To reset only prescription documents in development:
+
+```bash
+mongosh mongodb://localhost:27017/smartcare database/mongodb/drop_prescriptions.js
+mongosh mongodb://localhost:27017/smartcare database/mongodb/create_prescriptions.js
+```
 
 ## Web experience
 
@@ -72,6 +86,7 @@ and error states. Protected API calls send the JWT in the `Authorization` header
 export DB_URL=jdbc:postgresql://localhost:5432/smartcare
 export DB_USERNAME=smartcare
 export DB_PASSWORD=smartcare
+export MONGODB_URI=mongodb://localhost:27017/smartcare
 export JWT_SECRET="$(openssl rand -base64 32)"
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD='replace-with-a-strong-password'

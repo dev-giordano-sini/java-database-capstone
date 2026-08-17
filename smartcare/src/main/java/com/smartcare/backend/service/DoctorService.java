@@ -6,6 +6,7 @@ import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
+import com.smartcare.backend.repository.PrescriptionRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.logging.LogFactory;
@@ -30,13 +31,16 @@ public class DoctorService {
     private final AppointmentRepository appointmentRepository;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+    private final PrescriptionRepository prescriptionRepository;
 
     public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository,
-                         TokenService tokenService, PasswordEncoder passwordEncoder) {
+                         TokenService tokenService, PasswordEncoder passwordEncoder,
+                         PrescriptionRepository prescriptionRepository) {
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.tokenService = tokenService;
         this.passwordEncoder = passwordEncoder;
+        this.prescriptionRepository = prescriptionRepository;
     }
 
     @Transactional
@@ -169,6 +173,9 @@ public class DoctorService {
         }
 
         try {
+            appointmentRepository.findByDoctorId(doctorId).stream()
+                    .map(Appointment::getId)
+                    .forEach(prescriptionRepository::deleteAllByAppointmentId);
             doctorRepository.delete(doctor);
         } catch (Exception e) {
             log.error(e.getMessage());
