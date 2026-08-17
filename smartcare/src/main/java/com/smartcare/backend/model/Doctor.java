@@ -3,6 +3,8 @@ package com.smartcare.backend.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @Entity
+@Table(name = "doctors")
 public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,29 +20,41 @@ public class Doctor {
 
     @NotNull
     @Size(min = 3, max = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @NotNull
     @Size(min = 3, max = 50)
+    @Column(nullable = false, length = 50)
     private String specialty;
 
     @Email
     @NotNull
+    @Column(nullable = false, unique = true, length = 254)
     private String email;
 
     @Size(min = 6)
+    @NotNull
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(nullable = false, length = 60)
     private String password;
 
     @Pattern(regexp = "\\d{10}")
+    @Column(unique = true, length = 10)
     private String phone;
 
+    @Size(max = 2048)
+    @Pattern(regexp = "^https://.+", message = "profileImageUrl must use HTTPS")
+    @Column(name = "profile_image_url", length = 2048)
+    private String profileImageUrl;
+
+    @ElementCollection
     @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
     @Column(name = "time_slot")
     private List<String> availableTimes;
 
-    @NotNull
-    @Size(min = 0, max = 5)
+    @Min(0)
+    @Max(5)
     private int rating;
 
     public Long getId() {
@@ -88,6 +103,14 @@ public class Doctor {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public List<String> getAvailableTimes() {

@@ -1,7 +1,13 @@
 package com.smartcare.backend.DTO;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class Login {
+    @NotBlank
     private String identifier;
+    @NotBlank
+    @Size(min = 6)
     private String password;
 
     public String getIdentifier() {

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Patient dashboard · SmartCare</title>
+    <link rel="stylesheet" th:href="@{/assets/css/smartcare.css}">
+    <script type="module" th:src="@{/js/smartcare/dashboard.js}" defer></script>
+</head>
+<body data-page="patient">
+<div class="page-shell dashboard-shell">
+    <header th:replace="~{fragments/layout :: header('patient')}"></header>
+    <main class="dashboard patient-layout">
+        <aside class="dashboard-sidebar">
+            <span class="eyebrow">Patient portal</span><h1>Hello, <span data-patient-name>there</span>.</h1>
+            <p>Book a consultation and keep upcoming care easy to understand.</p>
+            <div class="profile-card" data-patient-profile><span>Loading profile…</span></div>
+        </aside>
+        <section class="dashboard-content">
+            <div class="dashboard-toolbar"><div><span class="eyebrow">Your care plan</span><h2>Upcoming appointments</h2></div></div>
+            <div class="appointment-list" data-patient-appointments><article class="skeleton-row"></article></div>
+            <div class="section-heading dashboard-section-heading">
+                <div><span class="eyebrow">Book a consultation</span><h2>Available doctors</h2></div>
+                <label class="search-field"><span>Search</span><input type="search" data-doctor-search placeholder="Doctor or specialty"></label>
+            </div>
+            <div class="card-grid compact-grid" data-patient-doctors><article class="skeleton-card"></article></div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+<dialog class="signup-dialog booking-dialog" data-booking-dialog>
+    <button class="dialog-close" data-dialog-close type="button">×</button>
+    <span class="eyebrow">One-hour consultation</span><h2>Book with <span data-booking-doctor>your doctor</span></h2>
+    <form data-booking-form>
+        <input type="hidden" name="doctorId"><input type="hidden" name="doctorName">
+        <label>Date<input name="date" type="date" required></label>
+        <label>Available time<select name="time" required><option value="">Choose a date first</option></select></label>
+        <button class="button button-primary button-block">Confirm appointment</button>
+        <p class="form-error" data-booking-error hidden></p>
+    </form>
+</dialog>
+<div th:replace="~{fragments/layout :: toasts}"></div>
+</body></html>
