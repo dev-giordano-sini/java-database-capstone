@@ -3,6 +3,7 @@ package com.smartcare.backend.controller;
 import com.smartcare.backend.DTO.Login;
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
 import com.smartcare.backend.DTO.DoctorResponse;
+import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.service.DoctorService;
 import com.smartcare.backend.service.MyService;
@@ -55,13 +56,18 @@ public class DoctorController {
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getDoctors() {
-        List<DoctorResponse> doctors = doctorService.getDoctors();
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", doctors);
-        response.put("status", "success");
+    public ResponseEntity<DoctorPageResponse> getDoctors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String specialty) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 10);
+        return ResponseEntity.ok(doctorService.getDoctors(safePage, safeSize, specialty));
+    }
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping("/specialties")
+    public ResponseEntity<List<String>> getSpecialties() {
+        return ResponseEntity.ok(doctorService.getSpecialties());
     }
 
 

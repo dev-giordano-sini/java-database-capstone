@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" role="img" aria-labelledby="title description">
+  <title id="title">Default doctor portrait</title>
+  <desc id="description">Neutral illustration used when a doctor has no profile photo.</desc>
+  <rect width="480" height="600" fill="#dce8d7"/>
+  <circle cx="240" cy="190" r="92" fill="#7ca594"/>
+  <path d="M72 548c16-145 77-218 168-218s152 73 168 218" fill="#fff"/>
+  <path d="M183 350l57 84 57-84 35 31-42 167H190l-42-167z" fill="#bcd9cb"/>
+  <circle cx="240" cy="434" r="18" fill="none" stroke="#17332d" stroke-width="8"/>
+  <path d="M240 452v52M159 367c0 76 25 91 63 91M321 367c0 76-25 91-63 91" fill="none" stroke="#17332d" stroke-width="8" stroke-linecap="round"/>
+</svg>

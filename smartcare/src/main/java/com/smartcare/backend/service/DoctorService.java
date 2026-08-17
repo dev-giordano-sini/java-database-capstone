@@ -3,6 +3,7 @@ package com.smartcare.backend.service;
 import com.smartcare.backend.DTO.Login;
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
 import com.smartcare.backend.DTO.DoctorResponse;
+import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -14,6 +15,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -138,10 +143,24 @@ public class DoctorService {
     }
 
     @Transactional
-    public List<DoctorResponse> getDoctors() {
-        return doctorRepository.findAll().stream()
-                .map(DoctorResponse::from)
-                .toList();
+    public DoctorPageResponse getDoctors(int page, int size, String specialty) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
+        Page<Doctor> doctors = specialty == null || specialty.isBlank()
+                ? doctorRepository.findAll(pageable)
+                : doctorRepository.findBySpecialtyIgnoreCase(specialty.trim(), pageable);
+        Page<DoctorResponse> responses = doctors.map(DoctorResponse::from);
+        return new DoctorPageResponse(
+                "success",
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages()
+        );
+    }
+
+    public List<String> getSpecialties() {
+        return doctorRepository.findDistinctSpecialties();
     }
 
     @Transactional

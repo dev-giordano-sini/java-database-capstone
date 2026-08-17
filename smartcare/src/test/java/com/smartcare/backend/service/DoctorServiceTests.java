@@ -1,13 +1,16 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
-import com.smartcare.backend.DTO.DoctorResponse;
+import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PrescriptionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 
 class DoctorServiceTests {
     @Test
@@ -32,7 +36,8 @@ class DoctorServiceTests {
         doctor.setPassword("must-not-be-exposed");
         doctor.setProfileImageUrl("/assets/images/alice_smith.svg");
         doctor.setAvailableTimes(List.of("09:00", "14:00"));
-        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        when(doctorRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(doctor), PageRequest.of(0, 5), 1));
         DoctorService service = new DoctorService(
                 doctorRepository,
                 mock(AppointmentRepository.class),
@@ -40,12 +45,12 @@ class DoctorServiceTests {
                 mock(PasswordEncoder.class),
                 mock(PrescriptionRepository.class));
 
-        List<DoctorResponse> directory = service.getDoctors();
+        DoctorPageResponse directory = service.getDoctors(0, 5, null);
 
-        assertEquals(1, directory.size());
-        assertEquals(7L, directory.getFirst().id());
-        assertEquals("/assets/images/alice_smith.svg", directory.getFirst().profileImageUrl());
-        assertEquals(List.of("09:00", "14:00"), directory.getFirst().availableTimes());
+        assertEquals(1, directory.totalElements());
+        assertEquals(7L, directory.data().getFirst().id());
+        assertEquals("/assets/images/alice_smith.svg", directory.data().getFirst().profileImageUrl());
+        assertEquals(List.of("09:00", "14:00"), directory.data().getFirst().availableTimes());
     }
 
     @Test

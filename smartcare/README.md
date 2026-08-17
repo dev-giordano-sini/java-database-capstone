@@ -78,7 +78,14 @@ psql -U smartcare -d smartcare -f database/seeds/04_doctor_images.sql
 The image seed expects `giulia_bianchi.svg`, `marco_romano.svg`, and
 `elena_conti.svg` in `src/main/resources/static/assets/images`. The scripts can
 be executed repeatedly: doctors and patients are matched by
-email, while appointments are matched by doctor and timestamp. Demo logins are:
+email, while appointments are matched by doctor and timestamp.
+
+The doctor seed creates twenty profiles across multiple specialties. The public
+directory displays five doctors by default, supports specialty filtering, and
+allows five or ten results per page. Profiles without a photo use the bundled
+`doctor_default.svg` illustration.
+
+Demo logins are:
 
 - doctors: any `@smartcare.demo` doctor, password `DoctorDemo!2026`;
 - patients: any `@smartcare.demo` patient, password `PatientDemo!2026`.

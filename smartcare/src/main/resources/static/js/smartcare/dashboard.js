@@ -22,9 +22,8 @@ function doctorCard(doctor, actions = '') {
 
 function doctorAvatar(doctor) {
     const fallback = escapeHtml(initials(doctor.name));
-    return doctor.profileImageUrl
-        ? `<div class="doctor-avatar"><img src="${escapeHtml(doctor.profileImageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"><span>${fallback}</span></div>`
-        : `<div class="doctor-avatar"><span>${fallback}</span></div>`;
+    const source = doctor.profileImageUrl || '/assets/images/doctor_default.svg';
+    return `<div class="doctor-avatar"><img src="${escapeHtml(source)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/assets/images/doctor_default.svg'"><span>${fallback}</span></div>`;
 }
 
 function wireSearch(input, container) {
@@ -42,7 +41,7 @@ async function loadPatientDashboard() {
     const doctorsContainer = document.querySelector('[data-patient-doctors]');
     try {
         const [patientResult, appointmentResult, doctorResult] = await Promise.all([
-            request('/patients/me'), request('/patients/me/appointments'), request('/doctor')
+            request('/patients/me'), request('/patients/me/appointments'), request('/doctor?size=10')
         ]);
         const patient = patientResult.data;
         document.querySelector('[data-patient-name]').textContent = patient.name.split(' ')[0];
@@ -110,12 +109,16 @@ bookingForm?.addEventListener('submit', async event => {
 async function loadAdminDashboard() {
     const container = document.querySelector('[data-admin-doctors]');
     try {
-        const [result, statistics] = await Promise.all([request('/doctor'), request('/admin/statistics/appointments')]);
+        const [result, statistics, specialties] = await Promise.all([
+            request('/doctor?size=10'),
+            request('/admin/statistics/appointments'),
+            request('/doctor/specialties')
+        ]);
         const doctors = result.data || [];
         container.innerHTML = doctors.length ? doctors.map(doctor => doctorCard(doctor,
             `<div class="doctor-actions"><button class="button button-danger" data-delete-doctor="${doctor.id}">Remove</button></div>`)).join('') : empty('No doctors in the directory.');
-        document.querySelector('[data-doctor-count]').textContent = doctors.length;
-        document.querySelector('[data-specialty-count]').textContent = new Set(doctors.map(item => item.specialty)).size;
+        document.querySelector('[data-doctor-count]').textContent = result.totalElements;
+        document.querySelector('[data-specialty-count]').textContent = specialties.length;
         wireSearch(document.querySelector('[data-doctor-search]'), container);
         renderStatistics(statistics);
         container.onclick = async event => {

@@ -15,16 +15,59 @@ if (current.token && dashboardByRole[current.role]) {
     if (authenticatedRole) authenticatedRole.textContent = current.role;
 }
 
+const directoryState = { page: 0, size: 5, specialty: '' };
+
 async function loadDoctors() {
     const container = document.querySelector('[data-public-doctors]');
     if (!container) return;
     try {
-        const result = await request('/doctor');
+        const params = new URLSearchParams({ page: directoryState.page, size: directoryState.size });
+        if (directoryState.specialty) params.set('specialty', directoryState.specialty);
+        const result = await request(`/doctor?${params}`);
         const doctors = result.data || [];
-        container.innerHTML = doctors.length ? doctors.slice(0, 6).map(doctorCard).join('') : emptyDoctors();
+        container.innerHTML = doctors.length ? doctors.map(doctorCard).join('') : emptyDoctors();
+        updateDirectoryPagination(result);
     } catch (error) {
         container.innerHTML = `<div class="empty-state">The medical directory is temporarily unavailable.</div>`;
     }
+}
+
+async function initializeDirectoryControls() {
+    const specialty = document.querySelector('[data-doctor-specialty]');
+    const pageSize = document.querySelector('[data-doctor-page-size]');
+    try {
+        const specialties = await request('/doctor/specialties');
+        specialty.innerHTML += specialties.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    } catch (error) {
+        specialty.disabled = true;
+    }
+    specialty?.addEventListener('change', () => {
+        directoryState.specialty = specialty.value;
+        directoryState.page = 0;
+        loadDoctors();
+    });
+    pageSize?.addEventListener('change', () => {
+        directoryState.size = Math.min(Number(pageSize.value), 10);
+        directoryState.page = 0;
+        loadDoctors();
+    });
+    document.querySelector('[data-doctor-previous]')?.addEventListener('click', () => {
+        if (directoryState.page > 0) { directoryState.page--; loadDoctors(); }
+    });
+    document.querySelector('[data-doctor-next]')?.addEventListener('click', () => {
+        directoryState.page++;
+        loadDoctors();
+    });
+}
+
+function updateDirectoryPagination(result) {
+    const totalPages = Number(result.totalPages || 0);
+    const previous = document.querySelector('[data-doctor-previous]');
+    const next = document.querySelector('[data-doctor-next]');
+    const status = document.querySelector('[data-doctor-page-status]');
+    previous.disabled = result.page <= 0;
+    next.disabled = totalPages === 0 || result.page + 1 >= totalPages;
+    status.textContent = totalPages ? `Page ${result.page + 1} of ${totalPages} · ${result.totalElements} doctors` : 'No doctors found';
 }
 
 function doctorCard(doctor) {
@@ -41,9 +84,8 @@ function doctorCard(doctor) {
 }
 function doctorAvatar(doctor) {
     const fallback = escapeHtml(initials(doctor.name));
-    return doctor.profileImageUrl
-        ? `<div class="doctor-avatar"><img src="${escapeHtml(doctor.profileImageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"><span>${fallback}</span></div>`
-        : `<div class="doctor-avatar"><span>${fallback}</span></div>`;
+    const source = doctor.profileImageUrl || '/assets/images/doctor_default.svg';
+    return `<div class="doctor-avatar"><img src="${escapeHtml(source)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/assets/images/doctor_default.svg'"><span>${fallback}</span></div>`;
 }
 function emptyDoctors(){ return '<div class="empty-state">Doctors will appear here as soon as the administrator adds them.</div>'; }
 
@@ -98,4 +140,5 @@ document.querySelector('[data-signup-form]')?.addEventListener('submit', async e
     }
 });
 
+initializeDirectoryControls();
 loadDoctors();
