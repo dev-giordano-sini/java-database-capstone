@@ -2,6 +2,7 @@ package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.Login;
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
+import com.smartcare.backend.DTO.DoctorResponse;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -136,13 +137,17 @@ public class DoctorService {
         }
     }
 
-    public List<Doctor> getDoctors() {
-        List<Doctor> doctors = doctorRepository.findAll();
-        return doctors == null || doctors.isEmpty() ? new ArrayList<>() : doctors;
+    @Transactional
+    public List<DoctorResponse> getDoctors() {
+        return doctorRepository.findAll().stream()
+                .map(DoctorResponse::from)
+                .toList();
     }
 
-    public Doctor getDoctorByEmail(String email) {
-        return doctorRepository.findByEmail(email);
+    @Transactional
+    public DoctorResponse getDoctorByEmail(String email) {
+        Doctor doctor = doctorRepository.findByEmail(email);
+        return doctor == null ? null : DoctorResponse.from(doctor);
     }
 
     @Transactional

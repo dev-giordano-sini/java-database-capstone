@@ -2,6 +2,7 @@ package com.smartcare.backend.controller;
 
 import com.smartcare.backend.DTO.Login;
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
+import com.smartcare.backend.DTO.DoctorResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.service.DoctorService;
 import com.smartcare.backend.service.MyService;
@@ -55,7 +56,7 @@ public class DoctorController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getDoctors() {
-        List<Doctor> doctors = doctorService.getDoctors();
+        List<DoctorResponse> doctors = doctorService.getDoctors();
         Map<String, Object> response = new HashMap<>();
         response.put("data", doctors);
         response.put("status", "success");
@@ -108,7 +109,7 @@ public class DoctorController {
         if (authentication.getStatusCode() != HttpStatus.OK) {
             return authentication;
         }
-        Doctor doctor = doctorService.getDoctorByEmail(tokenService.extractIdentifier(authorization));
+        DoctorResponse doctor = doctorService.getDoctorByEmail(tokenService.extractIdentifier(authorization));
         return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
     }
 

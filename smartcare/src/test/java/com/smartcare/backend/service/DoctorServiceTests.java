@@ -1,6 +1,7 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.DoctorProfileUpdate;
+import com.smartcare.backend.DTO.DoctorResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
@@ -20,6 +21,31 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 class DoctorServiceTests {
+    @Test
+    void doctorDirectoryReturnsSerializableResponsesWithoutPasswords() {
+        DoctorRepository doctorRepository = mock(DoctorRepository.class);
+        Doctor doctor = new Doctor();
+        doctor.setId(7L);
+        doctor.setName("Dr Alice Smith");
+        doctor.setSpecialty("Cardiology");
+        doctor.setEmail("alice@example.com");
+        doctor.setPassword("must-not-be-exposed");
+        doctor.setAvailableTimes(List.of("09:00", "14:00"));
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        DoctorService service = new DoctorService(
+                doctorRepository,
+                mock(AppointmentRepository.class),
+                mock(TokenService.class),
+                mock(PasswordEncoder.class),
+                mock(PrescriptionRepository.class));
+
+        List<DoctorResponse> directory = service.getDoctors();
+
+        assertEquals(1, directory.size());
+        assertEquals(7L, directory.getFirst().id());
+        assertEquals(List.of("09:00", "14:00"), directory.getFirst().availableTimes());
+    }
+
     @Test
     void availabilityUsesTheRequestedDayBoundaries() {
         DoctorRepository doctorRepository = mock(DoctorRepository.class);
