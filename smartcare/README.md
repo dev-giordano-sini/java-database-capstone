@@ -50,6 +50,30 @@ psql -U smartcare -d smartcare -f database/schema.sql
 Hibernate uses `ddl-auto=validate`; the SQL schema is authoritative and the
 application fails fast when entity mappings drift from it.
 
+### Load demo data
+
+After creating the PostgreSQL schema, load the deterministic portfolio fixtures
+in dependency order:
+
+```bash
+psql -U smartcare -d smartcare -f database/seeds/01_doctors.sql
+psql -U smartcare -d smartcare -f database/seeds/02_patients.sql
+psql -U smartcare -d smartcare -f database/seeds/03_appointments.sql
+```
+
+The scripts can be executed repeatedly: doctors and patients are matched by
+email, while appointments are matched by doctor and timestamp. Demo logins are:
+
+- doctors: any `@smartcare.demo` doctor, password `DoctorDemo!2026`;
+- patients: any `@smartcare.demo` patient, password `PatientDemo!2026`.
+
+These credentials and records are for local development only. Remove all demo
+records without touching other data with:
+
+```bash
+psql -U smartcare -d smartcare -f database/seeds/reset_demo_data.sql
+```
+
 For MongoDB outside Docker, create the validated collection and index with:
 
 ```bash
