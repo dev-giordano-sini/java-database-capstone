@@ -7,7 +7,6 @@ import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
-import com.smartcare.backend.repository.PrescriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -27,7 +26,6 @@ import static org.mockito.Mockito.when;
 class AppointmentServiceTests {
     private AppointmentRepository appointmentRepository;
     private DoctorRepository doctorRepository;
-    private PrescriptionRepository prescriptionRepository;
     private AppointmentService appointmentService;
 
     @BeforeEach
@@ -35,10 +33,8 @@ class AppointmentServiceTests {
         appointmentRepository = mock(AppointmentRepository.class);
         doctorRepository = mock(DoctorRepository.class);
         PatientRepository patientRepository = mock(PatientRepository.class);
-        prescriptionRepository = mock(PrescriptionRepository.class);
         appointmentService = new AppointmentService(
-                appointmentRepository, doctorRepository, patientRepository,
-                prescriptionRepository);
+                appointmentRepository, doctorRepository, patientRepository);
     }
 
     @Test
@@ -107,7 +103,7 @@ class AppointmentServiceTests {
     }
 
     @Test
-    void cancellingAppointmentAlsoRemovesMongoPrescriptions() {
+    void cancellingAppointmentReliesOnDatabaseCascadeForClinicalRecords() {
         Patient patient = new Patient();
         patient.setEmail("patient@example.com");
         Appointment appointment = new Appointment();
@@ -118,7 +114,6 @@ class AppointmentServiceTests {
         var response = appointmentService.cancelAppointment(12L, "patient@example.com");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(prescriptionRepository).deleteAllByAppointmentId(12L);
         verify(appointmentRepository).deleteById(12L);
     }
 }

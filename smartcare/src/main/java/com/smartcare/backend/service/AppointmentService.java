@@ -8,7 +8,6 @@ import com.smartcare.backend.model.Patient;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
 import com.smartcare.backend.repository.PatientRepository;
-import com.smartcare.backend.repository.PrescriptionRepository;
 import jakarta.transaction.Transactional;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
@@ -27,14 +26,12 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
-    private final PrescriptionRepository prescriptionRepository;
 
     public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
-                              PatientRepository patientRepository, PrescriptionRepository prescriptionRepository) {
+                              PatientRepository patientRepository) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
-        this.prescriptionRepository = prescriptionRepository;
     }
 
     @Transactional
@@ -91,7 +88,6 @@ public class AppointmentService {
 
         if(optional.isPresent() && optional.get().getPatient().getEmail().equalsIgnoreCase(patientEmail)) {
             map.put("message","appointment cancelled");
-            prescriptionRepository.deleteAllByAppointmentId(id);
             appointmentRepository.deleteById(id);
         }
         else if (optional.isEmpty()) {

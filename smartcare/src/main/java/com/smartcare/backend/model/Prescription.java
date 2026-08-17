@@ -1,38 +1,46 @@
 package com.smartcare.backend.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import java.time.LocalDateTime;
 
-@Document(collection = "prescriptions")
+@Entity
+@Table(name = "prescriptions")
 public class Prescription {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @NotNull
     @Size(min = 3, max = 100)
-    @Field("patientName")
+    @Column(name = "patient_name", nullable = false, length = 100)
     private String patientName;
     @NotNull
-    @Indexed
-    @Field("appointmentId")
+    @Column(name = "appointment_id", nullable = false)
     private Long appointmentId;
     @NotNull
     @Size(min = 3, max = 100)
+    @Column(nullable = false, length = 100)
     private String medication;
     @Size(max = 200)
-    @Field("doctorNotes")
+    @Column(name = "doctor_notes", length = 200)
     private String doctorNotes;
-    @Field("pharmacyName")
+    @Size(max = 255)
+    @Column(name = "pharmacy_name", length = 255)
     private String pharmacyName;
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -74,5 +82,9 @@ public class Prescription {
 
     public void setPharmacyName(String pharmacyName) {
         this.pharmacyName = pharmacyName;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

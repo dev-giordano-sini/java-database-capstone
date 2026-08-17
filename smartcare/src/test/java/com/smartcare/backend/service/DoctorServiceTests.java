@@ -5,7 +5,6 @@ import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
 import com.smartcare.backend.repository.DoctorRepository;
-import com.smartcare.backend.repository.PrescriptionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.domain.PageImpl;
@@ -42,8 +41,7 @@ class DoctorServiceTests {
                 doctorRepository,
                 mock(AppointmentRepository.class),
                 mock(TokenService.class),
-                mock(PasswordEncoder.class),
-                mock(PrescriptionRepository.class));
+                mock(PasswordEncoder.class));
 
         DoctorPageResponse directory = service.getDoctors(0, 5, null);
 
@@ -69,8 +67,7 @@ class DoctorServiceTests {
                 .thenReturn(List.of());
 
         DoctorService service = new DoctorService(
-                doctorRepository, appointmentRepository, tokenService, passwordEncoder,
-                mock(PrescriptionRepository.class));
+                doctorRepository, appointmentRepository, tokenService, passwordEncoder);
 
         assertEquals(List.of("09:00", "14:00"), service.getDoctorAvailability(3L, date));
     }
@@ -88,8 +85,7 @@ class DoctorServiceTests {
                 doctorRepository,
                 appointmentRepository,
                 mock(TokenService.class),
-                mock(PasswordEncoder.class),
-                mock(PrescriptionRepository.class));
+                mock(PasswordEncoder.class));
 
         Map<String, Object> result = service.filterDoctorsByNameSpecilityandTime(
                 "Test", "Cardiology", "AM");
@@ -108,8 +104,7 @@ class DoctorServiceTests {
                 doctorRepository,
                 mock(AppointmentRepository.class),
                 mock(TokenService.class),
-                mock(PasswordEncoder.class),
-                mock(PrescriptionRepository.class));
+                mock(PasswordEncoder.class));
 
         Doctor updated = service.updateOwnProfile("doctor@example.com",
                 new DoctorProfileUpdate("Cardiology", "1234567890", "https://cdn.example.com/doctor.webp", List.of("14:00", "09:00", "09:00")));
@@ -130,8 +125,7 @@ class DoctorServiceTests {
                 doctorRepository,
                 mock(AppointmentRepository.class),
                 mock(TokenService.class),
-                mock(PasswordEncoder.class),
-                mock(PrescriptionRepository.class));
+                mock(PasswordEncoder.class));
 
         Map<String, Object> result = service.findDoctorByName("alice");
 

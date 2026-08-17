@@ -4,8 +4,6 @@ import com.smartcare.backend.model.Prescription;
 import com.smartcare.backend.repository.PrescriptionRepository;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

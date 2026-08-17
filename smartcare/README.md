@@ -9,7 +9,7 @@ signed JWTs.
 
 ## Requirements
 
-- Docker with Docker Compose, or Java 21 + Maven 3.9 + PostgreSQL + MongoDB
+- Docker with Docker Compose, or Java 21 + Maven 3.9 + PostgreSQL
 - A Base64-encoded 256-bit JWT key
 
 ## Run with Docker
@@ -26,10 +26,9 @@ kept inside a named Docker volume.
 
 ## Databases
 
-PostgreSQL stores admins, doctors, patients, availability, and appointments.
-MongoDB is used only for prescription documents. Docker Compose initializes new
-volumes from `database/schema.sql` and
-`database/mongodb/create_prescriptions.js` automatically.
+PostgreSQL is the single datastore for accounts, availability, appointments,
+prescriptions, and medical reports. Docker Compose initializes new volumes from
+`database/schema.sql` automatically.
 
 For a PostgreSQL installation outside Docker, run:
 
@@ -58,6 +57,7 @@ existing local database, apply the migrations before restarting the application:
 ```bash
 psql -U smartcare -d smartcare -f database/migrations/V002__doctor_profile_image.sql
 psql -U smartcare -d smartcare -f database/migrations/V003__allow_local_doctor_images.sql
+psql -U smartcare -d smartcare -f database/migrations/V004__postgres_prescriptions_and_reports.sql
 ```
 
 The UI lazy-loads the image and falls back to the doctor's initials when the URL
@@ -97,19 +97,6 @@ records without touching other data with:
 psql -U smartcare -d smartcare -f database/seeds/reset_demo_data.sql
 ```
 
-For MongoDB outside Docker, create the validated collection and index with:
-
-```bash
-mongosh mongodb://localhost:27017/smartcare database/mongodb/create_prescriptions.js
-```
-
-To reset only prescription documents in development:
-
-```bash
-mongosh mongodb://localhost:27017/smartcare database/mongodb/drop_prescriptions.js
-mongosh mongodb://localhost:27017/smartcare database/mongodb/create_prescriptions.js
-```
-
 ## Web experience
 
 The Thymeleaf interface implements the role journeys described in the project
@@ -133,7 +120,6 @@ and error states. Protected API calls send the JWT in the `Authorization` header
 export DB_URL=jdbc:postgresql://localhost:5432/smartcare
 export DB_USERNAME=smartcare
 export DB_PASSWORD=smartcare
-export MONGODB_URI=mongodb://localhost:27017/smartcare
 export JWT_SECRET="$(openssl rand -base64 32)"
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD='replace-with-a-strong-password'
@@ -177,7 +163,8 @@ not require a running PostgreSQL instance.
 - `/api/doctor` — doctor login, availability, and management
 - `/api/patients` — patient registration, login, records, and filters
 - `/api/appointments` — appointment search, booking, update, and cancellation
-- `/api/prescription` — prescription creation and retrieval
+- `/api/prescription` — PostgreSQL prescription creation and retrieval
+- `/api/reports` — appointment exam reports and optional prescription links
 
 Protected operations receive `Authorization: Bearer <token>` and validate both
 the signature/expiration of the JWT and the role expected by the endpoint.

@@ -14,32 +14,16 @@ services:
       - smartcare-data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
 
-  document-database:
-    image: mongo:8
-    environment:
-      MONGO_INITDB_DATABASE: smartcare
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    volumes:
-      - smartcare-mongo-data:/data/db
-      - ./database/mongodb/create_prescriptions.js:/docker-entrypoint-initdb.d/10-prescriptions.js:ro
-
   application:
     build: .
     depends_on:
       database:
-        condition: service_healthy
-      document-database:
         condition: service_healthy
     environment:
       DB_URL: jdbc:postgresql://database:5432/smartcare
       DB_USERNAME: smartcare
       DB_PASSWORD: smartcare
       JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-      MONGODB_URI: mongodb://document-database:27017/smartcare
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a Base64-encoded 256-bit key}
       ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
@@ -49,4 +33,3 @@ services:
 
 volumes:
   smartcare-data:
-  smartcare-mongo-data:
