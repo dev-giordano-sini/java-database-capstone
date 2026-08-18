@@ -20,6 +20,7 @@ services:
       database:
         condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: postgres
       DB_URL: jdbc:postgresql://database:5432/smartcare
       DB_USERNAME: smartcare
       DB_PASSWORD: smartcare

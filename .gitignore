@@ -1,5 +1,6 @@
 .env
 target/
+smartcare/data/
 *.log
 *.iml
 .idea/

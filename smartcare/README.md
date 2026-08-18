@@ -50,6 +50,38 @@ of these causes:
 The server explicitly listens on `0.0.0.0:8080`, so it is reachable through
 the Docker port mapping as well as directly from a local Java process.
 
+## Run from IntelliJ or Maven without Docker
+
+The default `local` Spring profile uses a persistent H2 database and therefore
+does not require PostgreSQL. In IntelliJ, run `SmartcareApplication` with the
+working directory set to the `smartcare` folder, or run:
+
+```bash
+cd smartcare
+mvn spring-boot:run
+```
+
+Wait for `Started SmartcareApplication`, then open
+<http://localhost:8080/>. Local H2 data is stored under `smartcare/data/` and
+survives application restarts. The optional development console is available
+at <http://localhost:8080/h2-console> with JDBC URL
+`jdbc:h2:file:./data/smartcare`, username `sa`, and an empty password.
+
+To use an existing local PostgreSQL database instead, select the `postgres`
+profile in the IntelliJ run configuration:
+
+```text
+Active profiles: postgres
+```
+
+or start Maven with:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+```
+
+The PostgreSQL database and schema must already exist when using that profile.
+
 ## Databases
 
 PostgreSQL is the single datastore for accounts, availability, appointments,
