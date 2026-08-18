@@ -22,7 +22,33 @@ docker compose up --build
 ```
 
 The application is then available at <http://localhost:8080> and PostgreSQL is
-kept inside a named Docker volume.
+kept inside a named Docker volume. For a quick local evaluation, copying the
+environment file is optional because Compose supplies development-only defaults;
+always replace those defaults outside a local machine.
+
+### If `localhost:8080` does not open
+
+Use the HTTP URL **after** the application log contains `Started SmartcareApplication`:
+
+```bash
+curl --fail --show-error http://localhost:8080/
+docker compose ps
+docker compose logs application --tail=100
+```
+
+If the application container is not running, the log normally identifies one
+of these causes:
+
+- port `8080` is already occupied; stop the other process or change the host
+  side of `8080:8080` in `compose.yaml`;
+- PostgreSQL uses an older named volume whose schema predates the migrations;
+  apply `database/migrations/V002...V005` or, for disposable demo data, run
+  `docker compose down -v` followed by `docker compose up --build`;
+- when starting from an IDE instead of Compose, PostgreSQL must already be
+  available at `localhost:5432` with the schema from `database/schema.sql`.
+
+The server explicitly listens on `0.0.0.0:8080`, so it is reachable through
+the Docker port mapping as well as directly from a local Java process.
 
 ## Databases
 

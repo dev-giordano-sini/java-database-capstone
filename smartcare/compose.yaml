@@ -24,9 +24,9 @@ services:
       DB_USERNAME: smartcare
       DB_PASSWORD: smartcare
       JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a Base64-encoded 256-bit key}
-      ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:-c21hcnRjYXJlLWxvY2FsLWRldmVsb3BtZW50LWtleSE=}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-local-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-local-admin-change-me}
       JPA_DDL_AUTO: validate
     ports:
       - "8080:8080"
