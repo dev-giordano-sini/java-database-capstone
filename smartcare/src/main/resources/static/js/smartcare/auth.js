@@ -1,4 +1,4 @@
-import { request, saveSession, session, initializeHeader, toast, initials, escapeHtml } from './api.js';
+import { request, saveSession, session, initializeHeader, initials, escapeHtml } from './api.js';
 
 initializeHeader();
 
@@ -106,9 +106,8 @@ tabs.forEach(tab => tab.addEventListener('click', () => {
     tabs.forEach(item => item.classList.toggle('active', item === tab));
     loginForm.elements.role.value = tab.dataset.roleTab;
     const input = loginForm.elements.identifier;
-    const admin = tab.dataset.roleTab === 'admin';
-    input.type = admin ? 'text' : 'email';
-    document.querySelector('[data-identifier-label]').textContent = admin ? 'Username' : 'Email address';
+    input.type = 'email';
+    document.querySelector('[data-identifier-label]').textContent = 'Email address';
 }));
 
 loginForm?.addEventListener('submit', async event => {
@@ -118,10 +117,8 @@ loginForm?.addEventListener('submit', async event => {
     if (!loginForm.reportValidity()) return;
     const data = Object.fromEntries(new FormData(loginForm));
     const role = data.role;
-    const path = role === 'admin' ? '/admin/login' : role === 'doctor' ? '/doctor/login' : '/patients/login';
-    const body = role === 'admin'
-        ? { username: data.identifier, password: data.password }
-        : { identifier: data.identifier, password: data.password };
+    const path = role === 'doctor' ? '/doctor/login' : '/patients/login';
+    const body = { identifier: data.identifier, password: data.password };
     try {
         const result = await request(path, { method: 'POST', body: JSON.stringify(body) });
         if (!result.token) throw new Error('The server did not return a session token');
@@ -130,24 +127,6 @@ loginForm?.addEventListener('submit', async event => {
     } catch (error) {
         errorElement.textContent = error.message;
         errorElement.hidden = false;
-    }
-});
-
-const dialog = document.querySelector('[data-signup-dialog]');
-document.querySelector('[data-signup-toggle]')?.addEventListener('click', () => dialog.showModal());
-document.querySelector('[data-dialog-close]')?.addEventListener('click', () => dialog.close());
-document.querySelector('[data-signup-form]')?.addEventListener('submit', async event => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!form.reportValidity()) return;
-    const errorElement = document.querySelector('[data-signup-error]');
-    errorElement.hidden = true;
-    const body = Object.fromEntries(new FormData(form));
-    try {
-        await request('/patients', { method: 'POST', body: JSON.stringify(body) });
-        dialog.close(); form.reset(); toast('Account created. You can now sign in.');
-    } catch (error) {
-        errorElement.textContent = error.message; errorElement.hidden = false;
     }
 });
 

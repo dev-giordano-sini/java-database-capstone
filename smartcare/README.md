@@ -108,7 +108,8 @@ psql -U smartcare -d smartcare -f database/seeds/reset_demo_data.sql
 The Thymeleaf interface implements the role journeys described in the project
 stories:
 
-- visitors can explore the doctor directory and patients can register;
+- visitors can explore the doctor directory; self-service registration and the
+  public administrator login are temporarily hidden from the home page;
 - patients can sign in, inspect their profile and appointments, book available
   one-hour slots, and cancel their own bookings;
 - doctors can inspect a dated schedule, review patient contact details, manage

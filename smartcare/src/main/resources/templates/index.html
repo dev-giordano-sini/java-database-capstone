@@ -67,7 +67,7 @@
 
         <section class="access-section" id="access">
             <div class="access-intro">
-                <span class="eyebrow">One portal, three perspectives</span>
+                <span class="eyebrow">One portal, two perspectives</span>
                 <h2>Welcome back.</h2>
                 <p>Select your role and continue to your tailored workspace.</p>
                 <div class="privacy-note"><span>✓</span>Your password is protected with BCrypt and access uses signed tokens.</div>
@@ -76,7 +76,6 @@
                 <div class="role-tabs" role="tablist" aria-label="Select account role" data-auth-guest>
                     <button class="role-tab active" data-role-tab="patient" type="button">Patient</button>
                     <button class="role-tab" data-role-tab="doctor" type="button">Doctor</button>
-                    <button class="role-tab" data-role-tab="admin" type="button">Admin</button>
                 </div>
                 <form class="auth-form" data-login-form data-auth-guest novalidate>
                     <input type="hidden" name="role" value="patient">
@@ -85,7 +84,7 @@
                     <p class="form-error" data-form-error hidden></p>
                     <button class="button button-primary button-block" type="submit">Sign in securely</button>
                 </form>
-                <button class="text-button" type="button" data-signup-toggle data-auth-guest>New patient? Create an account</button>
+                <p class="access-note" data-auth-guest>Account registration is temporarily managed by the SmartCare team.</p>
                 <div class="authenticated-card" data-auth-session hidden>
                     <span class="authenticated-mark" aria-hidden="true">✓</span>
                     <p>You are signed in as <strong data-auth-role></strong>.</p>
@@ -97,30 +96,13 @@
         <section class="section about-strip" id="about">
             <span class="eyebrow">Designed around real workflows</span>
             <h2>Less administration. More attention.</h2>
-            <p>Patients manage bookings, doctors prepare for the day, and administrators keep the clinical team current.</p>
+            <p>Patients manage bookings while doctors prepare for the day and keep clinical information current.</p>
         </section>
     </main>
 
     <footer th:replace="~{fragments/layout :: footer}"></footer>
 </div>
 
-<dialog class="signup-dialog" data-signup-dialog>
-    <button class="dialog-close" type="button" data-dialog-close aria-label="Close">×</button>
-    <span class="eyebrow">Patient registration</span>
-    <h2>Create your SmartCare account</h2>
-    <form class="signup-form" data-signup-form>
-        <div class="form-grid">
-            <label>Full name<input name="name" required minlength="3"></label>
-            <label>Email<input name="email" type="email" required></label>
-            <label>Password<input name="password" type="password" required minlength="6"></label>
-            <label>Phone<input name="phone" inputmode="numeric" pattern="[0-9]{10}" required></label>
-            <label class="full-field">Address<input name="address" required></label>
-            <label>Date of birth<input name="birthDate" type="datetime-local" required></label>
-        </div>
-        <p class="form-error" data-signup-error hidden></p>
-        <button class="button button-primary button-block" type="submit">Create account</button>
-    </form>
-</dialog>
 <div th:replace="~{fragments/layout :: toasts}"></div>
 </body>
 </html>
