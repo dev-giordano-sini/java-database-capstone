@@ -50,7 +50,7 @@ public class DoctorService {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
         List<String> doctorAvailableTimesList = new ArrayList<>();
         Doctor doctor = null;
-        if (optionalDoctor.isPresent()) {
+        if (optionalDoctor.isPresent() && optionalDoctor.get().isApproved()) {
             doctor = optionalDoctor.get();
             doctorAvailableTimesList = doctor.getAvailableTimes();
         }
@@ -139,11 +139,16 @@ public class DoctorService {
     }
 
     @Transactional
-    public DoctorPageResponse getDoctors(int page, int size, String specialty) {
+    public DoctorPageResponse getDoctors(int page, int size, String specialty, boolean includePending) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
-        Page<Doctor> doctors = specialty == null || specialty.isBlank()
-                ? doctorRepository.findAll(pageable)
-                : doctorRepository.findBySpecialtyIgnoreCase(specialty.trim(), pageable);
+        boolean withoutSpecialty = specialty == null || specialty.isBlank();
+        Page<Doctor> doctors = includePending
+                ? (withoutSpecialty
+                    ? doctorRepository.findAll(pageable)
+                    : doctorRepository.findBySpecialtyIgnoreCase(specialty.trim(), pageable))
+                : (withoutSpecialty
+                    ? doctorRepository.findByApprovedTrue(pageable)
+                    : doctorRepository.findBySpecialtyIgnoreCaseAndApprovedTrue(specialty.trim(), pageable));
         Page<DoctorResponse> responses = doctors.map(DoctorResponse::from);
         return new DoctorPageResponse(
                 "success",
@@ -155,8 +160,18 @@ public class DoctorService {
         );
     }
 
-    public List<String> getSpecialties() {
-        return doctorRepository.findDistinctSpecialties();
+    public List<String> getSpecialties(boolean includePending) {
+        return includePending
+                ? doctorRepository.findDistinctSpecialties()
+                : doctorRepository.findDistinctApprovedSpecialties();
+    }
+
+    @Transactional
+    public DoctorResponse setApproval(long doctorId, boolean approved) {
+        Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
+        if (doctor == null) return null;
+        doctor.setApproved(approved);
+        return DoctorResponse.from(doctorRepository.save(doctor));
     }
 
     @Transactional
@@ -234,6 +249,11 @@ public class DoctorService {
         if (!passwordEncoder.matches(loginDTO.getPassword(), doctor.getPassword())) {
             response.put("message", "Invalid email or password");
             return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
+
+        if (!doctor.isApproved()) {
+            response.put("message", "Doctor profile is pending administrator approval");
+            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
         }
 
         String token = tokenService.generateToken(loginDTO.getIdentifier());

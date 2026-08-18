@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS doctors (
     password    VARCHAR(60) NOT NULL,
     phone       VARCHAR(10) UNIQUE,
     profile_image_url VARCHAR(2048),
+    approved    BOOLEAN NOT NULL DEFAULT FALSE,
     rating      INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT ck_doctors_rating CHECK (rating BETWEEN 0 AND 5),
     CONSTRAINT ck_doctors_phone CHECK (phone IS NULL OR phone ~ '^[0-9]{10}$'),

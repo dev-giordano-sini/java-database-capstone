@@ -22,6 +22,13 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     Page<Doctor> findBySpecialtyIgnoreCase(String specialty, Pageable pageable);
 
+    Page<Doctor> findByApprovedTrue(Pageable pageable);
+
+    Page<Doctor> findBySpecialtyIgnoreCaseAndApprovedTrue(String specialty, Pageable pageable);
+
     @Query("select distinct d.specialty from Doctor d order by d.specialty")
     List<String> findDistinctSpecialties();
+
+    @Query("select distinct d.specialty from Doctor d where d.approved = true order by d.specialty")
+    List<String> findDistinctApprovedSpecialties();
 }

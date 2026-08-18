@@ -59,15 +59,30 @@ public class DoctorController {
     public ResponseEntity<DoctorPageResponse> getDoctors(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(required = false) String specialty) {
+            @RequestParam(required = false) String specialty,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 10);
-        return ResponseEntity.ok(doctorService.getDoctors(safePage, safeSize, specialty));
+        boolean includePending = authorization != null && tokenService.validateToken(authorization, "admin");
+        return ResponseEntity.ok(doctorService.getDoctors(safePage, safeSize, specialty, includePending));
     }
 
     @GetMapping("/specialties")
-    public ResponseEntity<List<String>> getSpecialties() {
-        return ResponseEntity.ok(doctorService.getSpecialties());
+    public ResponseEntity<List<String>> getSpecialties(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        boolean includePending = authorization != null && tokenService.validateToken(authorization, "admin");
+        return ResponseEntity.ok(doctorService.getSpecialties(includePending));
+    }
+
+    @PatchMapping("/{id}/approval")
+    public ResponseEntity<?> setApproval(
+            @PathVariable long id,
+            @RequestParam boolean approved,
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "admin");
+        if (authentication.getStatusCode() != HttpStatus.OK) return authentication;
+        DoctorResponse doctor = doctorService.setApproval(id, approved);
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
     }
 
 

@@ -39,7 +39,7 @@ public class AppointmentService {
         try {
             Patient patient = patientRepository.findByEmail(patientEmail);
             Doctor doctor = doctorRepository.findById(appointment.getDoctor().getId()).orElse(null);
-            if (patient == null || doctor == null) {
+            if (patient == null || doctor == null || !doctor.isApproved()) {
                 return 0;
             }
             appointment.setPatient(patient);

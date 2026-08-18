@@ -11,6 +11,7 @@ public record DoctorResponse(
         String email,
         String phone,
         String profileImageUrl,
+        boolean approved,
         List<String> availableTimes,
         int rating
 ) {
@@ -26,6 +27,7 @@ public record DoctorResponse(
                 doctor.getEmail(),
                 doctor.getPhone(),
                 doctor.getProfileImageUrl(),
+                doctor.isApproved(),
                 slots,
                 doctor.getRating()
         );

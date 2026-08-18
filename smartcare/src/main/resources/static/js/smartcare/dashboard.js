@@ -58,10 +58,21 @@ function doctorCard(doctor, actions = '') {
         : '<span class="doctor-phone"><span aria-hidden="true">☎</span><span>Phone unavailable</span></span>';
     return `<article class="doctor-card" data-search-value="${escapeHtml(`${doctor.name} ${doctor.specialty}`.toLowerCase())}">
         <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(Number(doctor.rating || 0))}</span></div>
-        <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
+        <h3>${escapeHtml(doctor.name)}</h3>${specialtyBadge(doctor.specialty)}
         <div class="doctor-meta"><span class="doctor-contact"><span>${escapeHtml(doctor.email)}</span>${phone}</span></div>
         ${actions}
     </article>`;
+}
+
+function specialtyBadge(specialty) {
+    const presentations = {
+        cardiology: ['♥', 'coral'], dermatology: ['✦', 'gold'], pediatrics: ['★', 'sky'], neurology: ['⌁', 'violet'],
+        orthopedics: ['◆', 'sage'], ophthalmology: ['◉', 'sky'], psychiatry: ['☼', 'violet'], gynecology: ['♀', 'coral'],
+        endocrinology: ['⚗', 'gold'], gastroenterology: ['≈', 'sage'], pulmonology: ['♧', 'sky'], urology: ['◇', 'violet'],
+        otolaryngology: ['♪', 'gold'], 'general medicine': ['✚', 'sage']
+    };
+    const [icon, tone] = presentations[String(specialty || '').toLowerCase()] || ['✚', 'sage'];
+    return `<span class="specialty-badge specialty-${tone}"><span aria-hidden="true">${icon}</span>${escapeHtml(specialty)}</span>`;
 }
 
 function doctorAvatar(doctor) {
@@ -113,15 +124,34 @@ function renderPatientAppointments(items, container) {
     container.innerHTML = future.length ? future.map(item => `<article class="schedule-item">
         <div class="schedule-time">${new Date(item.appointmentTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
         <div><h3>${escapeHtml(item.doctorName)}</h3><p>${formatDateTime(item.appointmentTime)}</p></div>
-        <button class="button button-danger" data-cancel-appointment="${item.id}">Cancel</button>
+        <div class="schedule-actions"><button class="button button-secondary" data-view-prescriptions="${item.id}">Prescriptions</button>
+        <button class="button button-danger" data-cancel-appointment="${item.id}">Cancel</button></div>
     </article>`).join('') : empty('No upcoming appointments. Choose a doctor below to get started.');
     container.onclick = async event => {
+        const prescriptionButton = event.target.closest('[data-view-prescriptions]');
+        if (prescriptionButton) {
+            openPatientPrescriptions(prescriptionButton.dataset.viewPrescriptions);
+            return;
+        }
         const button = event.target.closest('[data-cancel-appointment]');
         if (!button || !confirm('Cancel this appointment?')) return;
         try { await request(`/appointments/${button.dataset.cancelAppointment}`, { method: 'DELETE' }); toast('Appointment cancelled.'); loadPatientDashboard(); }
         catch (error) { toast(error.message); }
     };
 }
+
+const patientPrescriptionDialog = document.querySelector('[data-patient-prescription-dialog]');
+async function openPatientPrescriptions(appointmentId) {
+    const history = document.querySelector('[data-patient-prescription-history]');
+    history.innerHTML = 'Loading prescriptions…';
+    patientPrescriptionDialog.showModal();
+    try {
+        const result = await request(`/prescription/${appointmentId}`);
+        const items = result.data || [];
+        history.innerHTML = items.length ? items.map(item => `<article><strong>${escapeHtml(item.medication)}</strong><span>${escapeHtml(item.doctorNotes || 'No instructions')}</span><span>${escapeHtml(item.pharmacyName || 'Any pharmacy')}</span></article>`).join('') : '<span>No prescription recorded for this appointment.</span>';
+    } catch (error) { history.textContent = error.message; }
+}
+patientPrescriptionDialog?.querySelector('[data-dialog-close]')?.addEventListener('click', () => patientPrescriptionDialog.close());
 
 const bookingDialog = document.querySelector('[data-booking-dialog]');
 const bookingForm = document.querySelector('[data-booking-form]');
@@ -163,13 +193,19 @@ async function loadAdminDashboard() {
         ]);
         const doctors = result.data || [];
         container.innerHTML = doctors.length ? doctors.map(doctor => doctorCard(doctor,
-            `<div class="doctor-actions"><button class="button button-danger" data-delete-doctor="${doctor.id}">Remove</button></div>`)).join('') : empty('No doctors in the directory.');
+            `<div class="approval-state ${doctor.approved ? 'is-approved' : 'is-pending'}">${doctor.approved ? 'Approved' : 'Pending approval'}</div><div class="doctor-actions"><button class="button button-secondary" data-doctor-approval="${doctor.id}" data-approved="${!doctor.approved}">${doctor.approved ? 'Suspend' : 'Approve'}</button><button class="button button-danger" data-delete-doctor="${doctor.id}">Remove</button></div>`)).join('') : empty('No doctors in the directory.');
         document.querySelector('[data-doctor-count]').textContent = result.totalElements;
         document.querySelector('[data-specialty-count]').textContent = specialties.length;
         updateDirectoryControls('admin', result, specialties);
         wireSearch(document.querySelector('[data-doctor-search]'), container);
         renderStatistics(statistics);
         container.onclick = async event => {
+            const approval = event.target.closest('[data-doctor-approval]');
+            if (approval) {
+                try { await request(`/doctor/${approval.dataset.doctorApproval}/approval?approved=${approval.dataset.approved}`, { method:'PATCH' }); toast('Doctor approval updated.'); loadAdminDashboard(); }
+                catch(error) { toast(error.message); }
+                return;
+            }
             const button = event.target.closest('[data-delete-doctor]');
             if (!button || !confirm('Remove this doctor and related appointments?')) return;
             try { await request(`/doctor/${button.dataset.deleteDoctor}`, { method:'DELETE' }); toast('Doctor removed.'); loadAdminDashboard(); }

@@ -33,9 +33,10 @@ class DoctorServiceTests {
         doctor.setSpecialty("Cardiology");
         doctor.setEmail("alice@example.com");
         doctor.setPassword("must-not-be-exposed");
+        doctor.setApproved(true);
         doctor.setProfileImageUrl("/assets/images/alice_smith.svg");
         doctor.setAvailableTimes(List.of("09:00", "14:00"));
-        when(doctorRepository.findAll(any(Pageable.class)))
+        when(doctorRepository.findByApprovedTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(doctor), PageRequest.of(0, 5), 1));
         DoctorService service = new DoctorService(
                 doctorRepository,
@@ -43,11 +44,12 @@ class DoctorServiceTests {
                 mock(TokenService.class),
                 mock(PasswordEncoder.class));
 
-        DoctorPageResponse directory = service.getDoctors(0, 5, null);
+        DoctorPageResponse directory = service.getDoctors(0, 5, null, false);
 
         assertEquals(1, directory.totalElements());
         assertEquals(7L, directory.data().getFirst().id());
         assertEquals("/assets/images/alice_smith.svg", directory.data().getFirst().profileImageUrl());
+        assertEquals(true, directory.data().getFirst().approved());
         assertEquals(List.of("09:00", "14:00"), directory.data().getFirst().availableTimes());
     }
 
@@ -58,6 +60,7 @@ class DoctorServiceTests {
         TokenService tokenService = mock(TokenService.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         Doctor doctor = new Doctor();
+        doctor.setApproved(true);
         doctor.setAvailableTimes(List.of("09:00", "14:00"));
         LocalDate date = LocalDate.of(2026, 8, 16);
 

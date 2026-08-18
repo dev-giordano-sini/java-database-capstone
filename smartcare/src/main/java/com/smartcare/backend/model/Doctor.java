@@ -51,6 +51,9 @@ public class Doctor {
     @Column(name = "profile_image_url", length = 2048)
     private String profileImageUrl;
 
+    @Column(nullable = false)
+    private boolean approved;
+
     @ElementCollection
     @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
     @Column(name = "time_slot")
@@ -114,6 +117,14 @@ public class Doctor {
 
     public void setProfileImageUrl(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 
     public List<String> getAvailableTimes() {

@@ -58,6 +58,7 @@ existing local database, apply the migrations before restarting the application:
 psql -U smartcare -d smartcare -f database/migrations/V002__doctor_profile_image.sql
 psql -U smartcare -d smartcare -f database/migrations/V003__allow_local_doctor_images.sql
 psql -U smartcare -d smartcare -f database/migrations/V004__postgres_prescriptions_and_reports.sql
+psql -U smartcare -d smartcare -f database/migrations/V005__doctor_approval.sql
 ```
 
 The UI lazy-loads the image and falls back to the doctor's initials when the URL
@@ -73,17 +74,22 @@ psql -U smartcare -d smartcare -f database/seeds/01_doctors.sql
 psql -U smartcare -d smartcare -f database/seeds/02_patients.sql
 psql -U smartcare -d smartcare -f database/seeds/03_appointments.sql
 psql -U smartcare -d smartcare -f database/seeds/04_doctor_images.sql
+psql -U smartcare -d smartcare -f database/seeds/05_clinical_records.sql
 ```
 
 The image seed expects `giulia_bianchi.svg`, `marco_romano.svg`, and
 `elena_conti.svg` in `src/main/resources/static/assets/images`. The scripts can
 be executed repeatedly: doctors and patients are matched by
-email, while appointments are matched by doctor and timestamp.
+email, while appointments are matched by doctor and timestamp. The clinical
+record seed adds example prescriptions and linked medical reports for the demo
+appointments.
 
 The doctor seed creates twenty profiles across multiple specialties. The public
 directory displays five doctors by default, supports specialty filtering, and
 allows five or ten results per page. Profiles without a photo use the bundled
-`doctor_default.svg` illustration.
+`doctor_default.svg` illustration. New doctor profiles are inactive until an
+administrator approves them from the doctor directory; pending profiles cannot
+sign in, expose availability, or receive bookings.
 
 Demo logins are:
 

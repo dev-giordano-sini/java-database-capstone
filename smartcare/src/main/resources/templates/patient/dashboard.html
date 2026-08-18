@@ -47,5 +47,10 @@
         <p class="form-error" data-booking-error hidden></p>
     </form>
 </dialog>
+<dialog class="signup-dialog" data-patient-prescription-dialog>
+    <button class="dialog-close" data-dialog-close type="button">×</button>
+    <span class="eyebrow">Your care plan</span><h2>Prescriptions</h2>
+    <div class="prescription-history" data-patient-prescription-history>Loading prescriptions…</div>
+</dialog>
 <div th:replace="~{fragments/layout :: toasts}"></div>
 </body></html>

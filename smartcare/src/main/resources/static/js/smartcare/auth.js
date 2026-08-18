@@ -78,9 +78,20 @@ function doctorCard(doctor) {
         : '';
     return `<article class="doctor-card">
         <div class="doctor-card-top">${doctorAvatar(doctor)}<span class="rating">${'★'.repeat(rating)}${'☆'.repeat(Math.max(0, 5-rating))}</span></div>
-        <h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.specialty)}</p>
+        <h3>${escapeHtml(doctor.name)}</h3>${specialtyBadge(doctor.specialty)}
         <div class="doctor-meta"><span class="doctor-contact"><span>${escapeHtml(doctor.email)}</span>${phone}</span><a href="${bookingHref}">Book →</a></div>
     </article>`;
+}
+
+function specialtyBadge(specialty) {
+    const presentations = {
+        cardiology: ['♥', 'coral'], dermatology: ['✦', 'gold'], pediatrics: ['★', 'sky'], neurology: ['⌁', 'violet'],
+        orthopedics: ['◆', 'sage'], ophthalmology: ['◉', 'sky'], psychiatry: ['☼', 'violet'], gynecology: ['♀', 'coral'],
+        endocrinology: ['⚗', 'gold'], gastroenterology: ['≈', 'sage'], pulmonology: ['♧', 'sky'], urology: ['◇', 'violet'],
+        otolaryngology: ['♪', 'gold'], 'general medicine': ['✚', 'sage']
+    };
+    const [icon, tone] = presentations[String(specialty || '').toLowerCase()] || ['✚', 'sage'];
+    return `<span class="specialty-badge specialty-${tone}"><span aria-hidden="true">${icon}</span>${escapeHtml(specialty)}</span>`;
 }
 function doctorAvatar(doctor) {
     const fallback = escapeHtml(initials(doctor.name));
