@@ -7,6 +7,50 @@ initializeHeader();
 const formatDateTime = value => new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 const today = () => new Date().toISOString().slice(0, 10);
 const empty = message => `<div class="empty-state">${escapeHtml(message)}</div>`;
+const patientDirectoryState = { page: 0, size: 5, specialty: '' };
+const adminDirectoryState = { page: 0, size: 5, specialty: '' };
+
+function doctorDirectoryPath(state) {
+    const params = new URLSearchParams({ page: state.page, size: state.size });
+    if (state.specialty) params.set('specialty', state.specialty);
+    return `/doctor?${params}`;
+}
+
+function initializeDirectoryControls(prefix, state, reload) {
+    const specialty = document.querySelector(`[data-${prefix}-doctor-specialty]`);
+    const pageSize = document.querySelector(`[data-${prefix}-doctor-page-size]`);
+    specialty?.addEventListener('change', () => {
+        state.specialty = specialty.value;
+        state.page = 0;
+        reload();
+    });
+    pageSize?.addEventListener('change', () => {
+        state.size = Math.min(Number(pageSize.value), 10);
+        state.page = 0;
+        reload();
+    });
+    document.querySelector(`[data-${prefix}-doctor-previous]`)?.addEventListener('click', () => {
+        if (state.page > 0) { state.page--; reload(); }
+    });
+    document.querySelector(`[data-${prefix}-doctor-next]`)?.addEventListener('click', () => {
+        state.page++;
+        reload();
+    });
+}
+
+function updateDirectoryControls(prefix, result, specialties) {
+    const specialty = document.querySelector(`[data-${prefix}-doctor-specialty]`);
+    if (specialty && specialty.options.length === 1) {
+        specialty.innerHTML += specialties.map(value =>
+            `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    }
+    const totalPages = Number(result.totalPages || 0);
+    document.querySelector(`[data-${prefix}-doctor-previous]`).disabled = result.page <= 0;
+    document.querySelector(`[data-${prefix}-doctor-next]`).disabled = totalPages === 0 || result.page + 1 >= totalPages;
+    document.querySelector(`[data-${prefix}-doctor-page-status]`).textContent = totalPages
+        ? `Page ${result.page + 1} of ${totalPages} · ${result.totalElements} doctors`
+        : 'No doctors found';
+}
 
 function doctorCard(doctor, actions = '') {
     const phone = doctor.phone
@@ -27,12 +71,13 @@ function doctorAvatar(doctor) {
 }
 
 function wireSearch(input, container) {
-    input?.addEventListener('input', () => {
+    if (!input) return;
+    input.oninput = () => {
         const query = input.value.trim().toLowerCase();
         container.querySelectorAll('[data-search-value]').forEach(card => {
             card.hidden = !card.dataset.searchValue.includes(query);
         });
-    });
+    };
 }
 
 async function loadPatientDashboard() {
@@ -40,8 +85,9 @@ async function loadPatientDashboard() {
     const appointments = document.querySelector('[data-patient-appointments]');
     const doctorsContainer = document.querySelector('[data-patient-doctors]');
     try {
-        const [patientResult, appointmentResult, doctorResult] = await Promise.all([
-            request('/patients/me'), request('/patients/me/appointments'), request('/doctor?size=10')
+        const [patientResult, appointmentResult, doctorResult, specialties] = await Promise.all([
+            request('/patients/me'), request('/patients/me/appointments'), request(doctorDirectoryPath(patientDirectoryState)),
+            request('/doctor/specialties')
         ]);
         const patient = patientResult.data;
         document.querySelector('[data-patient-name]').textContent = patient.name.split(' ')[0];
@@ -51,10 +97,11 @@ async function loadPatientDashboard() {
         doctorsContainer.innerHTML = doctors.length ? doctors.map(doctor => doctorCard(doctor,
             `<div class="doctor-actions"><button class="button button-secondary button-block" data-book-doctor="${doctor.id}" data-doctor-name="${escapeHtml(doctor.name)}">Book appointment</button></div>`)).join('') : empty('No doctors are available yet.');
         wireSearch(document.querySelector('[data-doctor-search]'), doctorsContainer);
-        doctorsContainer.addEventListener('click', event => {
+        updateDirectoryControls('patient', doctorResult, specialties);
+        doctorsContainer.onclick = event => {
             const button = event.target.closest('[data-book-doctor]');
             if (button) openBooking(button.dataset.bookDoctor, button.dataset.doctorName);
-        });
+        };
     } catch (error) {
         if (error.status === 401) return logoutExpired();
         toast(error.message);
@@ -110,7 +157,7 @@ async function loadAdminDashboard() {
     const container = document.querySelector('[data-admin-doctors]');
     try {
         const [result, statistics, specialties] = await Promise.all([
-            request('/doctor?size=10'),
+            request(doctorDirectoryPath(adminDirectoryState)),
             request('/admin/statistics/appointments'),
             request('/doctor/specialties')
         ]);
@@ -119,6 +166,7 @@ async function loadAdminDashboard() {
             `<div class="doctor-actions"><button class="button button-danger" data-delete-doctor="${doctor.id}">Remove</button></div>`)).join('') : empty('No doctors in the directory.');
         document.querySelector('[data-doctor-count]').textContent = result.totalElements;
         document.querySelector('[data-specialty-count]').textContent = specialties.length;
+        updateDirectoryControls('admin', result, specialties);
         wireSearch(document.querySelector('[data-doctor-search]'), container);
         renderStatistics(statistics);
         container.onclick = async event => {
@@ -213,8 +261,14 @@ prescriptionForm?.addEventListener('submit',async event=>{
 });
 function logoutExpired(){ localStorage.clear();window.location.replace('/#access'); }
 
-if(page==='patient') loadPatientDashboard();
-if(page==='admin') loadAdminDashboard();
+if(page==='patient') {
+    initializeDirectoryControls('patient', patientDirectoryState, loadPatientDashboard);
+    loadPatientDashboard();
+}
+if(page==='admin') {
+    initializeDirectoryControls('admin', adminDirectoryState, loadAdminDashboard);
+    loadAdminDashboard();
+}
 if(page==='doctor') {
     document.querySelector('[data-appointment-date]').value=today();
     document.querySelector('[data-load-schedule]').addEventListener('click',loadDoctorSchedule);

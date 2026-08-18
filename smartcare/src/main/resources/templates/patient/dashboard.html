@@ -22,7 +22,16 @@
                 <div><span class="eyebrow">Book a consultation</span><h2>Available doctors</h2></div>
                 <label class="search-field"><span>Search</span><input type="search" data-doctor-search placeholder="Doctor or specialty"></label>
             </div>
+            <div class="directory-controls">
+                <label>Specialty<select data-patient-doctor-specialty><option value="">All specialties</option></select></label>
+                <label>Doctors per page<select data-patient-doctor-page-size><option value="5">5</option><option value="10">10</option></select></label>
+            </div>
             <div class="card-grid compact-grid" data-patient-doctors><article class="skeleton-card"></article></div>
+            <nav class="pagination" aria-label="Available doctor pages">
+                <button class="button button-secondary" type="button" data-patient-doctor-previous disabled>Previous</button>
+                <span data-patient-doctor-page-status>Page 1</span>
+                <button class="button button-secondary" type="button" data-patient-doctor-next disabled>Next</button>
+            </nav>
         </section>
     </main>
     <footer th:replace="~{fragments/layout :: footer}"></footer>

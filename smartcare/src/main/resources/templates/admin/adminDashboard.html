@@ -25,7 +25,16 @@
                 <article class="metric"><span>Specialties</span><strong data-specialty-count>—</strong></article>
                 <article class="metric"><span>Directory status</span><strong class="metric-good">Active</strong></article>
             </div>
+            <div class="directory-controls">
+                <label>Specialty<select data-admin-doctor-specialty><option value="">All specialties</option></select></label>
+                <label>Doctors per page<select data-admin-doctor-page-size><option value="5">5</option><option value="10">10</option></select></label>
+            </div>
             <div class="card-grid compact-grid" data-admin-doctors><article class="skeleton-card"></article></div>
+            <nav class="pagination" aria-label="Doctor administration pages">
+                <button class="button button-secondary" type="button" data-admin-doctor-previous disabled>Previous</button>
+                <span data-admin-doctor-page-status>Page 1</span>
+                <button class="button button-secondary" type="button" data-admin-doctor-next disabled>Next</button>
+            </nav>
             <section class="statistics-panel">
                 <div><span class="eyebrow">Usage</span><h2>Appointments by month</h2></div>
                 <div class="statistics-chart" data-appointment-statistics><article class="skeleton-row"></article></div>
