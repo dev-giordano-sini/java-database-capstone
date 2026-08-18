@@ -3,12 +3,10 @@ package com.smartcare.backend.controller;
 import com.smartcare.backend.model.Prescription;
 import com.smartcare.backend.service.MyService;
 import com.smartcare.backend.service.PrescriptionService;
-import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.smartcare.backend.service.TokenService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,20 +16,24 @@ import java.util.Map;
 @RestController
 @RequestMapping("${api.path}" + "prescription")
 public class PrescriptionController {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final PrescriptionService prescriptionService;
+    private final MyService myService;
+    private final TokenService tokenService;
 
-    @Autowired
-    private PrescriptionService prescriptionService;
+    public PrescriptionController(PrescriptionService prescriptionService, MyService myService,
+                                  TokenService tokenService) {
+        this.prescriptionService = prescriptionService;
+        this.myService = myService;
+        this.tokenService = tokenService;
+    }
 
-    @Autowired
-    private MyService myService;
-
-    @PostMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> savePrescription(@PathVariable("token") String token, @RequestBody Prescription prescription) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "doctor");
+    @PostMapping
+    public ResponseEntity<Map<String, String>> savePrescription(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody Prescription prescription) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "doctor");
         if(responseService.getStatusCode() == HttpStatus.OK) {
-            return prescriptionService.savePrescription(prescription);
+            return prescriptionService.savePrescription(prescription, tokenService.extractIdentifier(authorization));
         }
         else {
            return responseService;
@@ -39,11 +41,20 @@ public class PrescriptionController {
     }
 
 
-    @GetMapping("/{appointmentId}/{token}")
-    public ResponseEntity<Map<String, Object>> getPrescriptionByAppointmentId(@PathVariable("token") String token, @PathVariable("appointmentId") long appointmentId) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "doctor");
-        if(responseService.getStatusCode() == HttpStatus.OK) {
-            return prescriptionService.getPrescription(appointmentId);
+    @GetMapping("/{appointmentId}")
+    public ResponseEntity<Map<String, Object>> getPrescriptionByAppointmentId(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable long appointmentId) {
+        Map<String, String> tokenData;
+        try {
+            tokenData = tokenService.decodeToken(authorization);
+        } catch (RuntimeException exception) {
+            tokenData = Map.of();
+        }
+        String role = tokenData.get("role");
+        if (("doctor".equals(role) || "patient".equals(role))
+                && myService.validateToken(authorization, role).getStatusCode() == HttpStatus.OK) {
+            return prescriptionService.getPrescription(appointmentId, tokenData.get("identifier"), role);
         }
         else {
             Map<String, Object> response = new HashMap<>();

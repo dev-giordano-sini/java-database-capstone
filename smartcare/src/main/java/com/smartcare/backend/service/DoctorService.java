@@ -1,6 +1,9 @@
 package com.smartcare.backend.service;
 
 import com.smartcare.backend.DTO.Login;
+import com.smartcare.backend.DTO.DoctorProfileUpdate;
+import com.smartcare.backend.DTO.DoctorResponse;
+import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Appointment;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.repository.AppointmentRepository;
@@ -8,9 +11,14 @@ import com.smartcare.backend.repository.DoctorRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,16 +30,19 @@ import java.util.stream.Collectors;
 
 @Service
 public class DoctorService {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
-    public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository, TokenService tokenService) {
+    public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository,
+                         TokenService tokenService, PasswordEncoder passwordEncoder) {
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -39,7 +50,7 @@ public class DoctorService {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
         List<String> doctorAvailableTimesList = new ArrayList<>();
         Doctor doctor = null;
-        if (optionalDoctor.isPresent()) {
+        if (optionalDoctor.isPresent() && optionalDoctor.get().isApproved()) {
             doctor = optionalDoctor.get();
             doctorAvailableTimesList = doctor.getAvailableTimes();
         }
@@ -48,12 +59,12 @@ public class DoctorService {
             return new ArrayList<>();
         }
 
-        LocalDateTime startLocalDateTime = LocalDateTime.from(date);
-        LocalDateTime endLocalDateTime = LocalDateTime.from(date.plusDays(1));
+        LocalDateTime startLocalDateTime = date.atStartOfDay();
+        LocalDateTime endLocalDateTime = date.plusDays(1).atStartOfDay();
         List<Appointment> appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctorId,
                 startLocalDateTime,
                 endLocalDateTime
-        ).orElse(new ArrayList<>());
+        );
 
         Set<LocalTime> timeSet = appointments.stream().map(appointment -> appointment.getAppointmentTime().toLocalTime()).collect(Collectors.toSet());
 
@@ -79,6 +90,7 @@ public class DoctorService {
         }
 
         try {
+            doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
             doctorRepository.save(doctor);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -110,6 +122,7 @@ public class DoctorService {
         }
 
         try {
+            doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
             doctorRepository.save(doctor);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -125,9 +138,59 @@ public class DoctorService {
         }
     }
 
-    public List<Doctor> getDoctors() {
-        List<Doctor> doctors = doctorRepository.findAll();
-        return doctors == null || doctors.isEmpty() ? new ArrayList<>() : doctors;
+    @Transactional
+    public DoctorPageResponse getDoctors(int page, int size, String specialty, boolean includePending) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
+        boolean withoutSpecialty = specialty == null || specialty.isBlank();
+        Page<Doctor> doctors = includePending
+                ? (withoutSpecialty
+                    ? doctorRepository.findAll(pageable)
+                    : doctorRepository.findBySpecialtyIgnoreCase(specialty.trim(), pageable))
+                : (withoutSpecialty
+                    ? doctorRepository.findByApprovedTrue(pageable)
+                    : doctorRepository.findBySpecialtyIgnoreCaseAndApprovedTrue(specialty.trim(), pageable));
+        Page<DoctorResponse> responses = doctors.map(DoctorResponse::from);
+        return new DoctorPageResponse(
+                "success",
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages()
+        );
+    }
+
+    public List<String> getSpecialties(boolean includePending) {
+        return includePending
+                ? doctorRepository.findDistinctSpecialties()
+                : doctorRepository.findDistinctApprovedSpecialties();
+    }
+
+    @Transactional
+    public DoctorResponse setApproval(long doctorId, boolean approved) {
+        Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
+        if (doctor == null) return null;
+        doctor.setApproved(approved);
+        return DoctorResponse.from(doctorRepository.save(doctor));
+    }
+
+    @Transactional
+    public DoctorResponse getDoctorByEmail(String email) {
+        Doctor doctor = doctorRepository.findByEmail(email);
+        return doctor == null ? null : DoctorResponse.from(doctor);
+    }
+
+    @Transactional
+    public Doctor updateOwnProfile(String email, DoctorProfileUpdate update) {
+        Doctor doctor = doctorRepository.findByEmail(email);
+        if (doctor == null) {
+            return null;
+        }
+        doctor.setSpecialty(update.specialty());
+        doctor.setPhone(update.phone());
+        doctor.setProfileImageUrl(update.profileImageUrl());
+        doctor.setAvailableTimes(update.availableTimes().stream().distinct().sorted().toList());
+        return doctorRepository.save(doctor);
     }
 
     /**
@@ -179,8 +242,18 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findByEmail(loginDTO.getIdentifier());
 
         if (doctor == null) {
-            response.put("message", "Doctor's email not found");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            response.put("message", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
+
+        if (!passwordEncoder.matches(loginDTO.getPassword(), doctor.getPassword())) {
+            response.put("message", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
+
+        if (!doctor.isApproved()) {
+            response.put("message", "Doctor profile is pending administrator approval");
+            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
         }
 
         String token = tokenService.generateToken(loginDTO.getIdentifier());
@@ -198,7 +271,7 @@ public class DoctorService {
 
     @Transactional
     public Map<String, Object> findDoctorByName(String doctorName) {
-        List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(null);
+        List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCase(doctorName);
         Map<String, Object> response = new HashMap<>();
 
         doctors.forEach(doctor -> {
@@ -217,7 +290,7 @@ public class DoctorService {
                 (specialty != null && !specialty.isEmpty()) &&
                 (amOrPm != null && !amOrPm.isEmpty() && (amOrPm.equals("AM") || amOrPm.equals("PM")))
         ) {
-            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty).orElse(new ArrayList<>());
+            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty);
             response = filterDoctorsByTime(doctors, amOrPm);
         }
 
@@ -227,34 +300,19 @@ public class DoctorService {
 
     private Map<String, Object> filterDoctorsByTime(List<Doctor> doctors, String amOrPm) {
         Map<String, Object> response = new HashMap<>();
-        List<Doctor> doctorFilterByPeriod = doctors.stream().filter(doctor ->
-                doctor.getAvailableTimes().stream().anyMatch(timeStr -> {
-                    LocalTime time = LocalTime.parse(timeStr);
-                    return amOrPm.equalsIgnoreCase("AM") ? time.isBefore(LocalTime.NOON)
-                            : time.isAfter(LocalTime.NOON);
+        doctors.forEach(doctor -> doctor.getAvailableTimes().stream()
+                .filter(timeString -> {
+                    LocalTime time = LocalTime.parse(timeString);
+                    return amOrPm.equalsIgnoreCase("AM")
+                            ? time.isBefore(LocalTime.NOON)
+                            : !time.isBefore(LocalTime.NOON);
                 })
-        ).collect(Collectors.toList());
-
-        doctorFilterByPeriod.forEach(doctor -> {
-            List<String> period = doctor.getAvailableTimes();
-            List<Doctor> doctorList = null;
-            for (String periodStr : period) {
-                if (!response.containsKey(periodStr)) {
-                    response.put(periodStr, new ArrayList<>());
-                } else {
-                    try {
-                        doctorList = (List<Doctor>) response.get(periodStr);
-                    } catch (ClassCastException e) {
-                        log.error(e.getMessage());
-                    }
-                }
-
-                if (doctorList != null) {
-                    doctorList.add(doctor);
-                }
-
-            }
-        });
+                .forEach(timeString -> {
+                    @SuppressWarnings("unchecked")
+                    List<Doctor> doctorsAtTime = (List<Doctor>) response.computeIfAbsent(
+                            timeString, ignored -> new ArrayList<Doctor>());
+                    doctorsAtTime.add(doctor);
+                }));
 
         return response;
     }
@@ -266,7 +324,7 @@ public class DoctorService {
         if ((doctorName != null && !doctorName.isEmpty()) &&
                 (amOrPm != null && !amOrPm.isEmpty() && (amOrPm.equals("AM") || amOrPm.equals("PM")))
         ) {
-            List<Doctor> doctors = doctorRepository.findByNameLike(doctorName).orElse(new ArrayList<>());
+            List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCase(doctorName);
             response = filterDoctorsByTime(doctors, amOrPm);
         }
 
@@ -278,7 +336,7 @@ public class DoctorService {
         Map<String, Object> response = new HashMap<>();
         List<Doctor> doctors;
         if ((doctorName != null && !doctorName.isEmpty()) && (specialty != null && !specialty.isEmpty())) {
-            doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty).orElse(new ArrayList<>());
+            doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(doctorName, specialty);
         } else {
             doctors = null;
         }
@@ -319,10 +377,14 @@ public class DoctorService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public List<Doctor> filterDoctorByTime(List<Doctor> doctors, String amOrPm) {
         Map<String, Object> map = filterDoctorsByTime(doctors, amOrPm);
 
-        return map.values().stream().map(f -> (Doctor) f ).collect(Collectors.toList());
+        return map.values().stream()
+                .flatMap(value -> ((List<Doctor>) value).stream())
+                .distinct()
+                .toList();
     }
 
 }

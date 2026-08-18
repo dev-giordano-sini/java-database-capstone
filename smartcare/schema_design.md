@@ -1,90 +1,31 @@
-| name                  | about                                                                       | title                             | labels       | assignees |
-|-----------------------|------------------------------------------------------------------------------|-----------------------------------|--------------|-----------|
-| Database Schema Design | Defines relational and document-based schema for Smart Clinic architecture | "[DB] Design schema architecture" | schema-design |           |
+# SmartCare persistence schema
 
+SmartCare uses PostgreSQL as its single datastore. Keeping appointments,
+prescriptions, and medical reports in one relational database provides atomic
+transactions, foreign keys, and database-level cascade behavior.
 
-### **Table: patient**
+## Relationships
 
-| Column Name | Data Type    | Constraints                 |
-|-------------|--------------|-----------------------------|
-| id          | INT          | PK, AUTO_INCREMENT          |
-| name        | VARCHAR(100) | NOT NULL                    |
-| email       | VARCHAR(100) | NOT NULL, UNIQUE            |
-| password    | VARCHAR(80)  | NOT NULL                    |
-| address     | VARCHAR(100) | NOT NULL                    |
-| phone       | VARCHAR(15)  | NOT NULL                    |
-| birthdate   | DATE         |                             |
-| alias       | VARCHAR(80)  | CHECK (gender IN ('M','F')) |
+- one doctor has many availability slots and appointments;
+- one patient has many appointments;
+- one appointment can have multiple prescriptions and medical reports;
+- one medical report can optionally reference the prescription associated with
+  the exam outcome;
+- deleting an appointment cascades to its prescriptions and reports; deleting a
+  referenced prescription keeps the report and clears `prescription_id`.
 
----
+## Tables
 
-### **Table: doctor**
+| Table | Purpose | Important constraints |
+|---|---|---|
+| `admins` | Administrative accounts | unique username, BCrypt password |
+| `doctors` | Doctor directory and profile | unique email/phone, rating 0–5 |
+| `patients` | Patient identity and profile | unique email/phone, past birthdate |
+| `doctor_available_times` | Bookable `HH:mm` slots | composite PK, FK to doctor |
+| `appointments` | One-hour consultations | unique doctor/time, patient and doctor FKs |
+| `prescriptions` | Medication instructions | appointment FK with cascade delete |
+| `medical_reports` | Exam reports and document references | appointment FK, optional prescription FK |
 
-
-| Column Name              | Data Type    | Constraints                 |
-|--------------------------|--------------|-----------------------------|
-| id                       | INT          | PK, AUTO_INCREMENT          |
-| name                     | VARCHAR(100) | NOT NULL                    |
-| email                    | VARCHAR(100) | NOT NULL, UNIQUE            |
-| password                 | VARCHAR(80)  | NOT NULL                    |
-| phone                    | VARCHAR(15)  | NOT NULL                    |
-| specialty                | VARCHAR(50)  | NOT NULL                    |
-| rating                   | INT DEFAULT 0|                             |
-
----
-
-### **Table: doctor_available_times**
-
-
-| Column Name              | Data Type    | Constraints               |
-|--------------------------|--------------|---------------------------|
-| doctor_id                | INT          | FK → doctor(id), NOT NULL |
-| available_times          | VARCHAR(15)  | NOT NULL                  |
-
----
-
-
-### **Table: appointment**
-
-
-| Column Name                         | Data Type | Constraints                |
-|-------------------------------------|-----------|----------------------------|
-| id                                  | INT       | PK, AUTO_INCREMENT         |
-| appointment_time                    | DATE      | NOT NULL                   | 
-| status                              | INT       | NOT NULL                   | 
-| doctor_id                           | INT       | FK → doctor(id), NOT NULL  | 
-| patient_id                          | INT       | FK → patient(id), NOT NULL | 
-
----
-
-
-## **Table: admin**
-
-
-| Column Name       | Data Type   | Constraints                |
-|-------------------|-------------|----------------------------|
-| id                | INT         | PK, AUTO_INCREMENT         |
-| username          | VARCHAR(80) | NOT NULL                   |
-| password          | VARCHAR(30) | NOT NULL                   |
-
----
-
-
-
-## **MongoDB Collection Design**
-
-## **Table: prescription**
-
-```json
-{
-  "_id": ObjectId("6807dd712725f013281e7201"),
-  "patientName": "John Smith",
-  "appointmentId": 51,
-  "medication": "Paracetamol",
-  "dosage": "500mg",
-  "doctorNotes": "Take 1 tablet every 6 hours.",
-  "_class": "com.project.back_end.models.Prescription"
-}
-
-
-````
+The canonical executable definitions are in `database/schema.sql`; additive
+changes for existing installations are under `database/migrations/`. Hibernate
+runs with `ddl-auto=validate`, so SQL owns the schema and JPA checks alignment.

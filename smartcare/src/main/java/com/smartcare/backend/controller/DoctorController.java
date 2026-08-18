@@ -1,16 +1,18 @@
 package com.smartcare.backend.controller;
 
 import com.smartcare.backend.DTO.Login;
+import com.smartcare.backend.DTO.DoctorProfileUpdate;
+import com.smartcare.backend.DTO.DoctorResponse;
+import com.smartcare.backend.DTO.DoctorPageResponse;
 import com.smartcare.backend.model.Doctor;
 import com.smartcare.backend.service.DoctorService;
 import com.smartcare.backend.service.MyService;
-import jakarta.websocket.server.PathParam;
+import com.smartcare.backend.service.TokenService;
+import jakarta.validation.Valid;
 import org.apache.commons.logging.LogFactory;
-import org.apache.juli.logging.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.logging.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,45 +23,74 @@ import java.util.Map;
 @RestController
 @RequestMapping("${api.path}" + "doctor")
 public class DoctorController {
-    private final Log log = (Log) LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
 
-    @Autowired
-    private MyService myService;
+    private final MyService myService;
+    private final DoctorService doctorService;
+    private final TokenService tokenService;
 
-    @Autowired
-    private DoctorService doctorService;
+    public DoctorController(MyService myService, DoctorService doctorService, TokenService tokenService) {
+        this.myService = myService;
+        this.doctorService = doctorService;
+        this.tokenService = tokenService;
+    }
 
-    @GetMapping("/availability/{user}/{doctorId}/{date}/{token}")
-    public ResponseEntity<Map<String, String>> getDoctorAvailability(@PathVariable("user") String user, @PathVariable("doctorId") long doctorId, @PathVariable("date") LocalDate date, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, user);
+    @GetMapping("/{doctorId}/availability")
+    public ResponseEntity<Map<String, Object>> getDoctorAvailability(
+            @PathVariable long doctorId,
+            @RequestParam LocalDate date,
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(
+                authorization, "patient", "doctor");
         if(responseService.getStatusCode() == HttpStatus.OK) {
             List<String> availability =  doctorService.getDoctorAvailability(doctorId, date);
-            Map<String, String> response = new HashMap<>();
-            response.put("data", availability.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", availability);
             response.put("status", "success");
 
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         else {
-            return responseService;
+            return new ResponseEntity<>(new HashMap<>(responseService.getBody()), responseService.getStatusCode());
         }
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, String>> getDoctors() {
-        List<Doctor> doctors = doctorService.getDoctors();
-        Map<String, String> response = new HashMap<>();
-        response.put("data", doctors.toString());
-        response.put("status", "success");
+    public ResponseEntity<DoctorPageResponse> getDoctors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String specialty,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 10);
+        boolean includePending = authorization != null && tokenService.validateToken(authorization, "admin");
+        return ResponseEntity.ok(doctorService.getDoctors(safePage, safeSize, specialty, includePending));
+    }
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping("/specialties")
+    public ResponseEntity<List<String>> getSpecialties(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        boolean includePending = authorization != null && tokenService.validateToken(authorization, "admin");
+        return ResponseEntity.ok(doctorService.getSpecialties(includePending));
+    }
+
+    @PatchMapping("/{id}/approval")
+    public ResponseEntity<?> setApproval(
+            @PathVariable long id,
+            @RequestParam boolean approved,
+            @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "admin");
+        if (authentication.getStatusCode() != HttpStatus.OK) return authentication;
+        DoctorResponse doctor = doctorService.setApproval(id, approved);
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
     }
 
 
-    @PostMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> addDoctor(@PathVariable("token") String token, @RequestBody Doctor doctor) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "admin");
+    @PostMapping
+    public ResponseEntity<Map<String, String>> addDoctor(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody Doctor doctor) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "admin");
 
         if(responseService.getStatusCode() == HttpStatus.OK) {
             int status = doctorService.saveDoctor(doctor);
@@ -89,23 +120,37 @@ public class DoctorController {
     }
 
     @PostMapping("/login")
-    public String loginDoctor(@PathParam("email") String email, @PathParam("password") String password) {
-        Login login = new  Login();
-        login.setIdentifier(email);
-        login.setPassword(password);
-        ResponseEntity<Map<String, String>> response = doctorService.validateDoctor(login);
-
-        if(response.getStatusCode() == HttpStatus.OK) {
-            return response.getBody().get("token");
-        }
-
-        return "";
+    public ResponseEntity<Map<String, String>> loginDoctor(@Valid @RequestBody Login login) {
+        return doctorService.validateDoctor(login);
     }
 
-    @PutMapping("/{token}")
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>>updateDoctorDetail(@PathVariable("token")String token, @RequestBody Doctor doctor) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "admin");
+    @GetMapping("/me")
+    public ResponseEntity<?> getOwnProfile(@RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "doctor");
+        if (authentication.getStatusCode() != HttpStatus.OK) {
+            return authentication;
+        }
+        DoctorResponse doctor = doctorService.getDoctorByEmail(tokenService.extractIdentifier(authorization));
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateOwnProfile(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody DoctorProfileUpdate update) {
+        ResponseEntity<Map<String, String>> authentication = myService.validateToken(authorization, "doctor");
+        if (authentication.getStatusCode() != HttpStatus.OK) {
+            return authentication;
+        }
+        Doctor doctor = doctorService.updateOwnProfile(tokenService.extractIdentifier(authorization), update);
+        return doctor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(doctor);
+    }
+
+    @PutMapping
+    public ResponseEntity<Map<String, String>> updateDoctorDetail(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody Doctor doctor) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "admin");
 
         if(responseService.getStatusCode() == HttpStatus.OK) {
             int status = doctorService.updateDoctor(doctor);
@@ -134,9 +179,10 @@ public class DoctorController {
         }
     }
 
-    @DeleteMapping("/{id}/{token}")
-    public ResponseEntity<Map<String, String>> deleteDoctor(@PathVariable("id") long id, @PathVariable("token") String token) {
-        ResponseEntity<Map<String, String>> responseService = myService.validateToken(token, "admin");
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteDoctor(
+            @PathVariable long id, @RequestHeader("Authorization") String authorization) {
+        ResponseEntity<Map<String, String>> responseService = myService.validateToken(authorization, "admin");
 
         if(responseService.getStatusCode() == HttpStatus.OK) {
             int status = doctorService.deleteDoctor(id);
@@ -167,12 +213,12 @@ public class DoctorController {
 
 
     @GetMapping("/filter/{name}/{time}/{speciality}")
-    public ResponseEntity<Map<String, String>> filterDoctors(@PathVariable("name") String name, @PathVariable("time") String amOrPm, @PathVariable("speciality") String speciality) {
+    public ResponseEntity<Map<String, Object>> filterDoctors(@PathVariable("name") String name, @PathVariable("time") String amOrPm, @PathVariable("speciality") String speciality) {
         Map<String,Object> filteredDoctors = myService.filterDoctor(name, speciality, amOrPm);
-        Map<String, String> response = new  HashMap<>();
+        Map<String, Object> response = new  HashMap<>();
         response.put("status", "ok");
         response.put("message", "filter all doctors");
-        response.put("data", filteredDoctors.toString());
+        response.put("data", filteredDoctors);
 
         return new  ResponseEntity<>(response, HttpStatus.OK);
     }

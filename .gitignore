@@ -1,0 +1,8 @@
+.env
+target/
+smartcare/data/
+*.log
+*.iml
+.idea/
+.vscode/
+.DS_Store

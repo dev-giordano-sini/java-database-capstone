@@ -1,0 +1,2 @@
+# Keep reviewable image wrappers as text so patch-only review systems can carry them.
+*.svg text eol=lf
